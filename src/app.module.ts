@@ -8,6 +8,9 @@ import { getControllerName } from './common/helpers/get-controller-name.helper';
 import { UserModule } from './domain/user/user.module';
 import { SvcConfigModule } from './config/svc.config.module';
 import { AuthModule } from './domain/auth/auth.module';
+import { CategoryModule } from './domain/category/category.module';
+import { SavingAccountModule } from './domain/savings_account/savings_account.module';
+import { TransitionModule } from './domain/transition/transition.module';
 
 @Module({
   imports: [
@@ -30,6 +33,9 @@ import { AuthModule } from './domain/auth/auth.module';
     }),
     AuthModule,
     UserModule,
+    CategoryModule,
+    SavingAccountModule,
+    TransitionModule,
   ],
   controllers: [],
   providers: [],
