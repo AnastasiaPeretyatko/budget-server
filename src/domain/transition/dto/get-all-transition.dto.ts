@@ -21,6 +21,7 @@ class FilterDto {
 }
 
 export class FindTransitionsDto {
+  @IsOptional()
   @IsObject()
   @Type(() => PagingDto)
   paging: PagingDto;
@@ -32,4 +33,8 @@ export class FindTransitionsDto {
   @IsOptional()
   @Type(() => FilterDto)
   filter?: FilterDto;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

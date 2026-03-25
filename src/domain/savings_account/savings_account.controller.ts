@@ -34,7 +34,7 @@ export class SavingAccountController {
     return await this.savingAccountService.delete(id);
   }
 
-  @Get('all')
+  @Get()
   async getAll() {
     return await this.savingAccountService.getAll();
   }

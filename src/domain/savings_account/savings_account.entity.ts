@@ -1,10 +1,8 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { BaseEntity } from 'src/common';
+import { Column, Entity } from 'typeorm';
 
 @Entity('savings_account')
-export class SavingAccountEntity {
-  @PrimaryColumn()
-  id: string;
-
+export class SavingAccountEntity extends BaseEntity {
   @Column()
   name: string;
 

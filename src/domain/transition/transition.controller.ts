@@ -13,6 +13,7 @@ export class TransitionController {
 
   @Get()
   async getAllTransition(@Query() dto: FindTransitionsDto) {
+    console.log({ dto });
     return this.transitionService.findAllTransition(dto);
   }
 
@@ -20,4 +21,12 @@ export class TransitionController {
   async getOneTransition(@Param('id') id: string) {
     return this.transitionService.findOneBy({ id });
   }
+
+  // @Patch('id')
+  // async patchTransition(
+  //   @Param('id') id: string,
+  //   @Body() dto: UpdateTransitionDto,
+  // ) {
+  //   return this.transitionService.update(id, dto);
+  // }
 }

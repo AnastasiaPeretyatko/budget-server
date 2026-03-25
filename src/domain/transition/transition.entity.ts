@@ -43,4 +43,7 @@ export class TransitionEntity extends BaseEntity {
 
   @Column({ type: 'varchar', nullable: true })
   description: string | null;
+
+  @Column({ type: 'timestamptz', nullable: false })
+  date: Date;
 }

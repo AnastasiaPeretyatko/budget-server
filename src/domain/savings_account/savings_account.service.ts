@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { SavingAccountEntity } from './savings_account.entity';
 import { ApiException } from 'src/common/exceptions/api.exceptions';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class SavingAccountService {
-  constructor(private readonly datasource: DataSource) {}
+  constructor(
+    private readonly datasource: DataSource,
+    @InjectRepository(SavingAccountEntity)
+    private readonly savingRepository: Repository<SavingAccountEntity>,
+  ) {}
 
   async findByOne(dto) {
     return await this.datasource
@@ -13,13 +18,19 @@ export class SavingAccountService {
       .findOneBy(dto);
   }
 
-  async create({ name, description }: { name: string; description?: string }) {
+  async create({
+    name,
+    description,
+    amount,
+  }: {
+    name: string;
+    description?: string;
+    amount: string;
+  }): Promise<SavingAccountEntity> {
     const account = await this.findByOne({ name });
     if (account) throw ApiException.badRequest('Error');
 
-    return await this.datasource
-      .getRepository(SavingAccountEntity)
-      .save({ name, description });
+    return this.savingRepository.save({ name, description, amount });
   }
 
   async update({
@@ -64,6 +75,6 @@ export class SavingAccountService {
   }
 
   async getAll() {
-    return this.datasource.getRepository(SavingAccountEntity).findAndCount();
+    return this.datasource.getRepository(SavingAccountEntity).find();
   }
 }

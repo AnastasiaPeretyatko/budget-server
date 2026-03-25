@@ -1,6 +1,6 @@
-import { Type } from 'class-transformer';
-import { IsDate, IsDefined, IsOptional, IsString } from 'class-validator';
-export class CreateTransitionDto {
+import { IsDefined, IsInt, IsOptional, IsString } from 'class-validator';
+
+export class UpdateTransitionDto {
   @IsString()
   @IsOptional()
   fromAccountId?: string;
@@ -13,16 +13,11 @@ export class CreateTransitionDto {
   @IsOptional()
   categoryId?: string;
 
-  @IsString()
+  @IsInt()
   @IsDefined()
   amount: string;
 
   @IsString()
   @IsOptional()
   description?: null;
-
-  @IsDate()
-  @Type(() => Date)
-  @IsDefined()
-  date: Date;
 }
