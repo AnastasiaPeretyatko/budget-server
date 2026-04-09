@@ -3,11 +3,11 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 @Entity('category')
 export class CategoryEntity {
   @PrimaryColumn()
-  id: string;
+  id!: string;
 
   @Column({ type: 'varchar', nullable: false })
-  name: string;
+  name!: string;
 
   @Column({ type: 'varchar', nullable: true })
-  description: string;
+  description!: string;
 }

@@ -5,22 +5,27 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  OneToMany,
   PrimaryColumn,
 } from 'typeorm';
+import { WorkspaceUserEntity } from '../workspace/workspace_user.entity';
 
 @Entity({ name: 'users' })
 export class UserEntity {
   @PrimaryColumn()
-  id: string;
+  id!: string;
 
   @Column()
-  email: string;
+  email!: string;
 
   @Column({ select: false })
-  password: string;
+  password!: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date;
+  createdAt!: Date;
+
+  @OneToMany(() => WorkspaceUserEntity, (uw) => uw.user)
+  userWorkspaces!: WorkspaceUserEntity[];
 
   public set plainPassword(pw: string) {
     this.password = pw;

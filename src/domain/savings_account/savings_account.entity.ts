@@ -4,10 +4,10 @@ import { Column, Entity } from 'typeorm';
 @Entity('savings_account')
 export class SavingAccountEntity extends BaseEntity {
   @Column()
-  name: string;
+  name!: string;
 
   @Column({ type: 'varchar', nullable: true })
-  description?: string;
+  description?: string | null;
 
   @Column({
     type: 'decimal',
@@ -16,5 +16,5 @@ export class SavingAccountEntity extends BaseEntity {
     nullable: false,
     default: '0',
   })
-  amount: string;
+  amount!: string;
 }

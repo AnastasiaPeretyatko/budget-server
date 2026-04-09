@@ -6,31 +6,31 @@ import { SavingAccountEntity } from '../savings_account/savings_account.entity';
 @Entity('transactions')
 export class TransitionEntity extends BaseEntity {
   @Column({ name: 'from_account_id', type: 'uuid', nullable: true })
-  fromAccountId: string | null;
+  fromAccountId!: string | null;
 
   @ManyToOne(() => SavingAccountEntity, {
     nullable: true,
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'from_account_id' })
-  fromAccount: SavingAccountEntity | null;
+  fromAccount!: SavingAccountEntity | null;
 
   @Column({ name: 'to_account_id', type: 'uuid', nullable: true })
-  toAccountId: string | null;
+  toAccountId!: string | null;
 
   @ManyToOne(() => SavingAccountEntity, {
     nullable: true,
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'to_account_id' })
-  toAccount: SavingAccountEntity;
+  toAccount!: SavingAccountEntity;
 
   @Column({ name: 'category_id', type: 'uuid', nullable: true })
-  categoryId: string | null;
+  categoryId!: string | null;
 
   @ManyToOne(() => CategoryEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'category_id' })
-  category: CategoryEntity | null;
+  category!: CategoryEntity | null;
 
   @Column({
     type: 'decimal',
@@ -39,11 +39,11 @@ export class TransitionEntity extends BaseEntity {
     nullable: false,
     default: '0',
   })
-  amount: string;
+  amount!: string;
 
   @Column({ type: 'varchar', nullable: true })
-  description: string | null;
+  description!: string | null;
 
   @Column({ type: 'timestamptz', nullable: false })
-  date: Date;
+  date!: Date;
 }
