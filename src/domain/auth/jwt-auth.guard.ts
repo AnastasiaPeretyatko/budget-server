@@ -5,8 +5,19 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-
+import { Request } from 'express';
 import { Observable } from 'rxjs';
+
+// Тип для payload JWT
+export interface JwtPayload {
+  id: string; // id пользователя
+  email?: string;
+  // сюда добавляй все поля, которые кладешь в токен
+}
+
+export interface AuthRequest extends Request {
+  user?: JwtPayload;
+}
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -15,22 +26,28 @@ export class JwtAuthGuard implements CanActivate {
   canActivate(
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
-    const req = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest<AuthRequest>();
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      throw new UnauthorizedException({
+        message: 'Пользователь не авторизован',
+      });
+    }
+
+    const [bearer, token] = authHeader.split(' ');
+    if (bearer !== 'Bearer' || !token) {
+      throw new UnauthorizedException({
+        message: 'Пользователь не авторизован',
+      });
+    }
+
     try {
-      const authHeader = req.headers.authorization;
-      const bearer = authHeader.split(' ')[0];
-      const token = authHeader.split(' ')[1];
-
-      if (bearer !== 'Bearer' || !token) {
-        throw new UnauthorizedException({
-          message: 'Пользователь не авторизован',
-        });
-      }
-
-      const user = this.jwtService.verify(token, {
+      const user = this.jwtService.verify<JwtPayload>(token, {
         secret: process.env.JWT_ACCESS_TOKEN_SECRET_KEY || 'SECRET',
       });
-      req.user = user;
+
+      req.user = user; // теперь тип безопасен
       return true;
     } catch {
       throw new UnauthorizedException({

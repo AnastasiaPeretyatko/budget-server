@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions, TokenExpiredError } from '@nestjs/jwt';
 
 import { ApiException } from 'src/common/exceptions/api.exceptions';
 
@@ -8,6 +8,9 @@ import { UserService } from '../user/user.service';
 import { IUser } from '../user/types';
 import { DataSource } from 'typeorm';
 import { UserEntity } from '../user/user.entity';
+
+const ACESSEC_TOKEN_TIME = '1m';
+const REFRESH_TOKEN_TIME = '15m';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +22,11 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.validateUser(dto);
-    return { user, token: this.generateToken(user!) };
+    return {
+      user,
+      token: this.generateToken(user!, ACESSEC_TOKEN_TIME),
+      refreshToken: this.generateToken(user!, REFRESH_TOKEN_TIME),
+    };
   }
 
   async register(dto: LoginDto) {
@@ -28,7 +35,8 @@ export class AuthService {
 
     return {
       user: { id: user.id, email: user.email },
-      token: this.generateToken(user),
+      token: this.generateToken(user, ACESSEC_TOKEN_TIME),
+      refreshToken: this.generateToken(user, REFRESH_TOKEN_TIME),
     };
   }
 
@@ -49,11 +57,33 @@ export class AuthService {
     return await this.userService.findOneBy({ email: dto.email });
   }
 
-  private generateToken(user: IUser) {
+  private generateToken(
+    user: IUser,
+    tokenLifeTime?: JwtSignOptions['expiresIn'],
+  ) {
     const payload = { email: user.email, id: user.id };
     return this.jwtService.sign(payload, {
       secret: process.env.JWT_ACCESS_TOKEN_SECRET_KEY || 'SECRET',
-      expiresIn: '15m',
+      expiresIn: tokenLifeTime || ACESSEC_TOKEN_TIME,
     });
+  }
+
+  refreshToken(token: string) {
+    try {
+      const payload = this.jwtService.verify<IUser>(token, {
+        secret: process.env.JWT_ACCESS_TOKEN_SECRET_KEY || 'SECRET',
+      });
+
+      if (!payload) throw ApiException.unautorized('Refresh token unvalid');
+      return {
+        token: this.generateToken(payload, ACESSEC_TOKEN_TIME),
+      };
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        throw ApiException.unautorized('Refresh token expired');
+      }
+
+      throw ApiException.unautorized('Refresh token invalid');
+    }
   }
 }
