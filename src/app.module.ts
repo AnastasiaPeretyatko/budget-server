@@ -11,6 +11,7 @@ import { AuthModule } from './domain/auth/auth.module';
 import { CategoryModule } from './domain/category/category.module';
 import { SavingAccountModule } from './domain/savings_account/savings_account.module';
 import { TransitionModule } from './domain/transition/transition.module';
+import { WorkspaceModule } from './domain/workspace/workspaces.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { TransitionModule } from './domain/transition/transition.module';
     CategoryModule,
     SavingAccountModule,
     TransitionModule,
+    WorkspaceModule,
   ],
   controllers: [],
   providers: [],
