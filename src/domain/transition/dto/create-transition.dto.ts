@@ -2,6 +2,10 @@ import { Type } from 'class-transformer';
 import { IsDate, IsDefined, IsOptional, IsString } from 'class-validator';
 export class CreateTransitionDto {
   @IsString()
+  @IsDefined()
+  workspaceId!: string;
+
+  @IsString()
   @IsOptional()
   fromAccountId?: string;
 
@@ -15,7 +19,7 @@ export class CreateTransitionDto {
 
   @IsString()
   @IsDefined()
-  amount: string;
+  amount!: string;
 
   @IsString()
   @IsOptional()
@@ -24,5 +28,5 @@ export class CreateTransitionDto {
   @IsDate()
   @Type(() => Date)
   @IsDefined()
-  date: Date;
+  date!: Date;
 }

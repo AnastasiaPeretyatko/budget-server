@@ -9,8 +9,8 @@ import { IUser } from '../user/types';
 import { DataSource } from 'typeorm';
 import { UserEntity } from '../user/user.entity';
 
-const ACESSEC_TOKEN_TIME = '1m';
-const REFRESH_TOKEN_TIME = '15m';
+const ACESSEC_TOKEN_TIME = '3d';
+const REFRESH_TOKEN_TIME = '30d';
 
 @Injectable()
 export class AuthService {

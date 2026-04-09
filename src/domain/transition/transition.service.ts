@@ -9,19 +9,26 @@ import {
 } from './dto';
 import { ApiException } from 'src/common/exceptions/api.exceptions';
 import { SavingAccountEntity } from '../savings_account/savings_account.entity';
+import { WorkspaceService } from '../workspace/workspaces.service';
 
 @Injectable()
 export class TransitionService {
   constructor(
     @InjectRepository(TransitionEntity)
     private readonly transitionRepository: Repository<TransitionEntity>,
+    private readonly workspaceService: WorkspaceService,
     private readonly datasource: DataSource,
   ) {}
 
   public async create(
     dto: CreateTransitionDto,
   ): Promise<TransitionEntity | null> {
-    const { fromAccountId, toAccountId } = dto;
+    const { fromAccountId, toAccountId, workspaceId } = dto;
+
+    const isExistWorkspace = await this.workspaceService.findById(workspaceId);
+
+    if (!isExistWorkspace)
+      throw ApiException.badRequest('This workspace does not exist');
 
     const tr = await this.datasource.transaction(async (manager) => {
       const repo = manager.getRepository(SavingAccountEntity);
@@ -55,15 +62,30 @@ export class TransitionService {
     filter,
   }: FindTransitionsDto): Promise<{ rows: TransitionEntity[]; count: number }> {
     const limit = paging?.limit ?? 20;
-    console.log({ filter });
+    const offset = paging?.offset ?? 0;
 
     const db = this.transitionRepository
       .createQueryBuilder('transition')
       .leftJoinAndSelect('transition.fromAccount', 'fromAccount')
       .leftJoinAndSelect('transition.toAccount', 'toAccount')
       .leftJoinAndSelect('transition.category', 'category')
+      .leftJoinAndSelect('transition.workspace', 'workspace')
       .orderBy('transition.createdAt', 'ASC')
-      .limit(limit + 1);
+      .take(limit)
+      .skip(offset);
+
+    db.where('transition.workspaceId = :workspaceId', {
+      workspaceId: filter.workspaceId,
+    });
+
+    if (filter.date.between) {
+      db.andWhere('transition.createdAt BETWEEN :from AND :to', {
+        from: filter.date.between[0],
+        to: filter.date.between[1],
+      });
+    } else {
+      db.andWhere(`transition.createdAt >= NOW() - INTERVAL '7 days'`);
+    }
 
     if (filter?.fromAccountId) {
       db.andWhere('transition.fromAccountId = :fromAccountId', {

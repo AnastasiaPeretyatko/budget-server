@@ -45,7 +45,7 @@ export class WorkspaceService {
       .groupBy('workspaces.id')
       .addGroupBy('workspaces.owner_id')
       .addGroupBy('owner.id')
-      .getOneOrFail();
+      .getOne();
   }
 
   async getAll(userId: string) {

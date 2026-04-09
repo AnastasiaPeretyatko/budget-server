@@ -1,10 +1,31 @@
-import { IsOptional, IsString, IsNumber, IsObject } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsObject,
+  IsDefined,
+  IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class PagingDto {
   @IsOptional()
   @IsNumber()
   limit?: number;
+
+  @IsOptional()
+  @IsNumber()
+  offset?: number;
+}
+
+class FilterDateDto {
+  @IsDefined()
+  @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(2)
+  between!: string[];
 }
 
 class FilterDto {
@@ -17,14 +38,22 @@ class FilterDto {
   toAccountId?: string;
 
   @IsString()
-  categoryId: string;
+  categoryId!: string;
+
+  @IsDefined()
+  @IsString()
+  workspaceId!: string;
+
+  @IsOptional()
+  @Type(() => FilterDateDto)
+  date!: FilterDateDto;
 }
 
 export class FindTransitionsDto {
   @IsOptional()
   @IsObject()
   @Type(() => PagingDto)
-  paging: PagingDto;
+  paging?: PagingDto;
 
   @IsOptional()
   @IsObject()
@@ -32,7 +61,7 @@ export class FindTransitionsDto {
 
   @IsOptional()
   @Type(() => FilterDto)
-  filter?: FilterDto;
+  filter!: FilterDto;
 
   @IsOptional()
   @IsString()

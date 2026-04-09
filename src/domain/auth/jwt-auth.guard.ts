@@ -8,15 +8,13 @@ import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { Observable } from 'rxjs';
 
-// Тип для payload JWT
 export interface JwtPayload {
-  id: string; // id пользователя
+  id: string;
   email?: string;
-  // сюда добавляй все поля, которые кладешь в токен
 }
 
 export interface AuthRequest extends Request {
-  user?: JwtPayload;
+  user: JwtPayload;
 }
 
 @Injectable()
@@ -31,14 +29,14 @@ export class JwtAuthGuard implements CanActivate {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       throw new UnauthorizedException({
-        message: 'Пользователь не авторизован',
+        message: 'The user is not logged in',
       });
     }
 
     const [bearer, token] = authHeader.split(' ');
     if (bearer !== 'Bearer' || !token) {
       throw new UnauthorizedException({
-        message: 'Пользователь не авторизован',
+        message: 'The user is not logged in',
       });
     }
 
@@ -51,7 +49,7 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     } catch {
       throw new UnauthorizedException({
-        message: 'Пользователь не авторизован',
+        message: 'The user is not logged in',
       });
     }
   }

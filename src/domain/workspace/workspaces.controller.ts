@@ -11,23 +11,16 @@ export class WorkspaceController {
 
   @Post()
   async create(@Req() req: AuthRequest, @Body() dto: CreateWorkspaceDto) {
-    if (!req.user) return 'error';
     return await this.workspaceService.create(req.user.id, dto);
   }
 
   @Get()
   async getAll(@Req() req: AuthRequest) {
-    if (!req.user) return 'error';
     return await this.workspaceService.getAll(req.user.id);
   }
 
   @Post('/invite')
-  async inviteUser(
-    @Req() req: AuthRequest,
-    @Body() dto: { workspaceId: string; emails: string[] },
-  ) {
-    if (!req.user) return 'error';
-
+  async inviteUser(@Body() dto: { workspaceId: string; emails: string[] }) {
     return await this.workspaceService.inviteUser(dto);
   }
 }
