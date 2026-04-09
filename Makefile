@@ -8,4 +8,4 @@ migrate-up:
 	yarn migration:up
 
 migrate-down:
-	migration:down
+	yarn migration:down
