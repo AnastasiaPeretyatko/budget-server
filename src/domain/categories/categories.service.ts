@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { CategoryEntity } from './category.entity';
+import { CategoriesEntity } from './categories.entity';
 import { ApiException } from 'src/common/exceptions/api.exceptions';
 
 @Injectable()
-export class CategoryService {
+export class CategoriesService {
   constructor(private readonly datasource: DataSource) {}
 
   async findByOne(dto) {
-    return await this.datasource.getRepository(CategoryEntity).findOneBy(dto);
+    return await this.datasource.getRepository(CategoriesEntity).findOneBy(dto);
   }
 
   async create({ name, description }: { name: string; description?: string }) {
@@ -17,7 +17,7 @@ export class CategoryService {
     if (category) throw ApiException.badRequest('Error');
 
     return await this.datasource
-      .getRepository(CategoryEntity)
+      .getRepository(CategoriesEntity)
       .save({ name, description });
   }
 
@@ -37,19 +37,19 @@ export class CategoryService {
       throw ApiException.badRequest('Error');
 
     await this.datasource
-      .getRepository(CategoryEntity)
+      .getRepository(CategoriesEntity)
       .update(id, { name, description });
     return await this.findByOne({ id });
   }
 
   async delete(id: string) {
-    await this.datasource.getRepository(CategoryEntity).delete(id);
+    await this.datasource.getRepository(CategoriesEntity).delete(id);
     return {
       message: 'Category was deleted',
     };
   }
 
   async getAll() {
-    return await this.datasource.getRepository(CategoryEntity).findAndCount();
+    return await this.datasource.getRepository(CategoriesEntity).findAndCount();
   }
 }

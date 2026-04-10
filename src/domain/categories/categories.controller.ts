@@ -8,33 +8,33 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { CategoryService } from './category.service';
+import { CategoriesService } from './categories.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 type Category = { name: string; description?: string };
 
-@Controller('category')
+@Controller('categories')
 @UseGuards(JwtAuthGuard)
-export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+export class CategoriesController {
+  constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
   async create(@Body() dto: Category) {
-    return await this.categoryService.create(dto);
+    return await this.categoriesService.create(dto);
   }
 
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: Category) {
-    return await this.categoryService.update({ id, ...dto });
+    return await this.categoriesService.update({ id, ...dto });
   }
 
   @Delete(':id')
   async delete(@Param('id') id: string) {
-    return await this.categoryService.delete(id);
+    return await this.categoriesService.delete(id);
   }
 
   @Get('all')
   async getAll() {
-    return await this.categoryService.getAll();
+    return await this.categoriesService.getAll();
   }
 }

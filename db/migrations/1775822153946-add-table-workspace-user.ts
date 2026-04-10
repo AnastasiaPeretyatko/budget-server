@@ -1,7 +1,7 @@
 import { id, timestampts } from 'db/helpers';
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class AddTableWorkspaceUser1774594587435 implements MigrationInterface {
+export class AddTableWorkspaceUser1775822153946 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({

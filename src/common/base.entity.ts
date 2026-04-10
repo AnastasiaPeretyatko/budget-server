@@ -1,15 +1,19 @@
-import { CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  CreateDateColumn,
+  DeleteDateColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 export abstract class BaseEntity {
-  @PrimaryGeneratedColumn()
-  id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @CreateDateColumn()
-  public createdAt: Date;
+  public createdAt!: Date;
 
   @CreateDateColumn()
-  public updatedAt: Date;
+  public updatedAt!: Date;
 
-  @CreateDateColumn()
-  public deletedAt: Date;
+  @DeleteDateColumn()
+  public deletedAt!: Date;
 }

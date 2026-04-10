@@ -2,7 +2,7 @@ import { registerAs } from '@nestjs/config';
 
 const getConfig = () => ({
   ports: {
-    rest: process.env.PORT,
+    rest: process.env.APP_PORT,
   },
   otp: process.env.SECRET_OTP_CODE,
 });
