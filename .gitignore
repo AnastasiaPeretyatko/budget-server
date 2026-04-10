@@ -46,6 +46,10 @@ lerna-debug.log*
 .temp
 .tmp
 
+# Package managers
+.npm/*
+.cache
+
 # Runtime data
 pids
 *.pid

@@ -1,7 +1,7 @@
 import { id, timestampts } from 'db/helpers';
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class AddTableTransactions1773226104351 implements MigrationInterface {
+export class AddTableTransactions1775821807477 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
@@ -27,7 +27,7 @@ export class AddTableTransactions1773226104351 implements MigrationInterface {
             default: '0',
           },
           {
-            name: 'category_id',
+            name: 'categories_id',
             type: 'uuid',
             isNullable: true,
           },
@@ -35,6 +35,11 @@ export class AddTableTransactions1773226104351 implements MigrationInterface {
             name: 'description',
             type: 'varchar',
             isNullable: true,
+          },
+          {
+            name: 'date',
+            type: 'timestamptz',
+            precision: 3,
           },
           ...timestampts,
         ],
@@ -52,8 +57,8 @@ export class AddTableTransactions1773226104351 implements MigrationInterface {
             onDelete: 'SET NULL',
           },
           {
-            columnNames: ['category_id'],
-            referencedTableName: 'category',
+            columnNames: ['categories_id'],
+            referencedTableName: 'categories',
             referencedColumnNames: ['id'],
             onDelete: 'SET NULL',
           },

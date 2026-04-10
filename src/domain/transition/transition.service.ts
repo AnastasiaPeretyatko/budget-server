@@ -68,7 +68,7 @@ export class TransitionService {
       .createQueryBuilder('transition')
       .leftJoinAndSelect('transition.fromAccount', 'fromAccount')
       .leftJoinAndSelect('transition.toAccount', 'toAccount')
-      .leftJoinAndSelect('transition.category', 'category')
+      .leftJoinAndSelect('transition.categories', 'categories')
       .leftJoinAndSelect('transition.workspace', 'workspace')
       .orderBy('transition.createdAt', 'ASC')
       .take(limit)
@@ -119,7 +119,7 @@ export class TransitionService {
       .createQueryBuilder('transition')
       .leftJoinAndSelect('transition.fromAccount', 'fromAccount')
       .leftJoinAndSelect('transition.toAccount', 'toAccount')
-      .leftJoinAndSelect('transition.category', 'category')
+      .leftJoinAndSelect('transition.categories', 'categories')
       .where(`transition.${key} = :value`, { value })
       .getOne();
   }

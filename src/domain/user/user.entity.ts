@@ -1,28 +1,16 @@
 import * as bcrypt from 'bcrypt';
 
-import {
-  BeforeInsert,
-  BeforeUpdate,
-  Column,
-  Entity,
-  OneToMany,
-  PrimaryColumn,
-} from 'typeorm';
+import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany } from 'typeorm';
 import { WorkspaceUserEntity } from '../workspace/workspace_user.entity';
+import { BaseEntity } from 'src/common';
 
 @Entity({ name: 'users' })
-export class UserEntity {
-  @PrimaryColumn()
-  id!: string;
-
+export class UserEntity extends BaseEntity {
   @Column()
   email!: string;
 
   @Column({ select: false })
   password!: string;
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt!: Date;
 
   @OneToMany(() => WorkspaceUserEntity, (uw) => uw.user)
   userWorkspaces!: WorkspaceUserEntity[];

@@ -4,8 +4,7 @@ const id: TableColumnOptions = {
   name: 'id',
   type: 'uuid',
   isPrimary: true,
-  isGenerated: true,
-  generationStrategy: 'uuid',
+  isNullable: false,
   default: 'gen_random_uuid()',
 };
 

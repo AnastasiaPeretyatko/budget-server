@@ -8,7 +8,7 @@ import { getControllerName } from './common/helpers/get-controller-name.helper';
 import { UserModule } from './domain/user/user.module';
 import { SvcConfigModule } from './config/svc.config.module';
 import { AuthModule } from './domain/auth/auth.module';
-import { CategoryModule } from './domain/category/category.module';
+import { CategoriesModule } from './domain/categories/categories.module';
 import { SavingAccountModule } from './domain/savings_account/savings_account.module';
 import { TransitionModule } from './domain/transition/transition.module';
 import { WorkspaceModule } from './domain/workspace/workspaces.module';
@@ -34,7 +34,7 @@ import { WorkspaceModule } from './domain/workspace/workspaces.module';
     }),
     AuthModule,
     UserModule,
-    CategoryModule,
+    CategoriesModule,
     SavingAccountModule,
     TransitionModule,
     WorkspaceModule,

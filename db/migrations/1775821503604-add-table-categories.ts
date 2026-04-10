@@ -1,11 +1,11 @@
 import { id, timestampts } from 'db/helpers';
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class AddTableCategory1773225657789 implements MigrationInterface {
+export class AddTableCategories1775821503604 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
-        name: 'category',
+        name: 'categories',
         columns: [
           id,
           {
@@ -21,10 +21,11 @@ export class AddTableCategory1773225657789 implements MigrationInterface {
           ...timestampts,
         ],
       }),
+      true,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('category');
+    await queryRunner.query(`DROP TABLE "category"`);
   }
 }

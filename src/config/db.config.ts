@@ -15,5 +15,6 @@ export default registerAs(
     namingStrategy: new NamingStrategy(),
     synchronize: false,
     logging: process.env.DATABASE_LOGGING_ENABLED === 'true',
+    uuidExtension: 'pgcrypto',
   }),
 );

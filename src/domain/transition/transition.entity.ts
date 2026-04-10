@@ -1,6 +1,6 @@
 import { BaseEntity } from 'src/common';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
-import { CategoryEntity } from '../category/category.entity';
+import { CategoriesEntity } from '../categories/categories.entity';
 import { SavingAccountEntity } from '../savings_account/savings_account.entity';
 import { WorkspaceEntity } from '../workspace/workspaces.entity';
 
@@ -26,12 +26,12 @@ export class TransitionEntity extends BaseEntity {
   @JoinColumn({ name: 'to_account_id' })
   toAccount!: SavingAccountEntity;
 
-  @Column({ name: 'category_id', type: 'uuid', nullable: true })
+  @Column({ name: 'categories_id', type: 'uuid', nullable: true })
   categoryId?: string | null;
 
-  @ManyToOne(() => CategoryEntity, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'category_id' })
-  category?: CategoryEntity | null;
+  @ManyToOne(() => CategoriesEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'categories_id' })
+  category?: CategoriesEntity | null;
 
   @Column({ name: 'workspace_id', type: 'uuid', nullable: false })
   workspaceId!: string;
