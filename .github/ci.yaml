@@ -1,0 +1,38 @@
+name: CI
+
+on: push
+env:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: node:20-bookworm-slim
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install deps
+        uses: ./.github/actions/build-deps
+      - name: Build app and deps
+        run: yarn build
+        shell: sh
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: built-artifacts
+          path: ./dist
+
+  lint:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: node:20-bookworm-slim
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install deps
+        uses: ./.github/actions/build-deps
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: built-artifacts
+          path: dist
+      - run: yarn lint
