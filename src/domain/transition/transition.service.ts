@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TransitionEntity } from './transition.entity';
 import { DataSource, Repository } from 'typeorm';
@@ -18,7 +18,10 @@ export class TransitionService {
     private readonly transitionRepository: Repository<TransitionEntity>,
     private readonly workspaceService: WorkspaceService,
     private readonly datasource: DataSource,
-  ) {}
+    private readonly logger: Logger,
+  ) {
+    this.logger = new Logger(TransitionService.name);
+  }
 
   public async create(
     dto: CreateTransitionDto,
@@ -64,6 +67,8 @@ export class TransitionService {
     const limit = paging?.limit ?? 20;
     const offset = paging?.offset ?? 0;
 
+    this.logger.log('Filter', { filter });
+
     const db = this.transitionRepository
       .createQueryBuilder('transition')
       .leftJoinAndSelect('transition.fromAccount', 'fromAccount')
@@ -78,7 +83,7 @@ export class TransitionService {
       workspaceId: filter.workspaceId,
     });
 
-    if (filter.date.between) {
+    if (filter.date?.between) {
       db.andWhere('transition.createdAt BETWEEN :from AND :to', {
         from: filter.date.between[0],
         to: filter.date.between[1],

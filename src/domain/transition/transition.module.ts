@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TransitionEntity } from './transition.entity';
 import { TransitionService } from './transition.service';
@@ -19,7 +19,7 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule,
   ],
   controllers: [TransitionController],
-  providers: [TransitionService],
+  providers: [TransitionService, Logger],
   exports: [TransitionService],
 })
 export class TransitionModule {}
