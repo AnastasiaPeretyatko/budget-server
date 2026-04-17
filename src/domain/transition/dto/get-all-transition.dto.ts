@@ -37,6 +37,7 @@ class FilterDto {
   @IsString()
   toAccountId?: string;
 
+  @IsOptional()
   @IsString()
   categoryId!: string;
 

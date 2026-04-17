@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { TransitionService } from './transition.service';
 import { CreateTransitionDto, FindTransitionsDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -21,8 +13,8 @@ export class TransitionController {
     return this.transitionService.create(dto);
   }
 
-  @Get()
-  async getAllTransition(@Query() dto: FindTransitionsDto) {
+  @Post('/all')
+  async getAllTransition(@Body() dto: FindTransitionsDto) {
     return this.transitionService.findAllTransition(dto);
   }
 
