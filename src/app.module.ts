@@ -12,6 +12,7 @@ import { CategoriesModule } from './domain/categories/categories.module';
 import { SavingAccountModule } from './domain/savings_account/savings_account.module';
 import { TransitionModule } from './domain/transition/transition.module';
 import { WorkspaceModule } from './domain/workspace/workspaces.module';
+import { HealthController } from './domain/health';
 
 @Module({
   imports: [
@@ -39,7 +40,7 @@ import { WorkspaceModule } from './domain/workspace/workspaces.module';
     TransitionModule,
     WorkspaceModule,
   ],
-  controllers: [],
   providers: [],
+  controllers: [HealthController],
 })
 export class AppModule {}
