@@ -25,8 +25,9 @@ export class TransitionService {
 
   public async create(
     dto: CreateTransitionDto,
+    workspaceId: string,
   ): Promise<TransitionEntity | null> {
-    const { fromAccountId, toAccountId, workspaceId } = dto;
+    const { fromAccountId, toAccountId } = dto;
 
     const isExistWorkspace = await this.workspaceService.findById(workspaceId);
 
@@ -54,16 +55,18 @@ export class TransitionService {
         });
       }
 
-      return await manager.getRepository(TransitionEntity).save(dto);
+      return await manager
+        .getRepository(TransitionEntity)
+        .save({ ...dto, workspaceId });
     });
 
     return await this.findOneBy({ id: tr.id });
   }
 
-  public async findAllTransition({
-    paging,
-    filter,
-  }: FindTransitionsDto): Promise<{ rows: TransitionEntity[]; count: number }> {
+  public async findAllTransition(
+    { paging, filter }: FindTransitionsDto,
+    workspaceId: string,
+  ): Promise<{ rows: TransitionEntity[]; count: number }> {
     const limit = paging?.limit ?? 20;
     const offset = paging?.offset ?? 0;
 
@@ -79,9 +82,7 @@ export class TransitionService {
       .take(limit)
       .skip(offset);
 
-    db.where('transition.workspaceId = :workspaceId', {
-      workspaceId: filter.workspaceId,
-    });
+    db.where('transition.workspaceId = :workspaceId', { workspaceId });
 
     if (filter.date?.between) {
       db.andWhere('transition.createdAt BETWEEN :from AND :to', {

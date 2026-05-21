@@ -41,10 +41,6 @@ class FilterDto {
   @IsString()
   categoryId!: string;
 
-  @IsDefined()
-  @IsString()
-  workspaceId!: string;
-
   @IsOptional()
   @Type(() => FilterDateDto)
   date!: FilterDateDto;
