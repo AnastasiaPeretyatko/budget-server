@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TransitionEntity } from './transition.entity';
-import { DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 import {
   CreateTransitionDto,
   FindTransitionsDto,
@@ -91,6 +91,19 @@ export class TransitionService {
       });
     } else {
       db.andWhere(`transition.createdAt >= NOW() - INTERVAL '7 days'`);
+    }
+
+    if (filter?.accountId) {
+      const { accountId } = filter;
+      db.andWhere(
+        new Brackets((qb) => {
+          qb.where('transition.fromAccountId = :accountId', {
+            accountId,
+          }).orWhere('transition.toAccountId = :accountId', {
+            accountId,
+          });
+        }),
+      );
     }
 
     if (filter?.fromAccountId) {

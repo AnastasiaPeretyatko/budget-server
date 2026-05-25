@@ -31,6 +31,10 @@ class FilterDateDto {
 class FilterDto {
   @IsOptional()
   @IsString()
+  accountId?: string;
+
+  @IsOptional()
+  @IsString()
   fromAccountId?: string;
 
   @IsOptional()
