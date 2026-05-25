@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, ILike } from 'typeorm';
 import { CategoriesEntity } from './categories.entity';
 import { ApiException } from 'src/common/exceptions/api.exceptions';
 
@@ -7,34 +7,42 @@ import { ApiException } from 'src/common/exceptions/api.exceptions';
 export class CategoriesService {
   constructor(private readonly datasource: DataSource) {}
 
-  async findByOne(dto) {
+  async findByOne(dto: Partial<CategoriesEntity>) {
     return await this.datasource.getRepository(CategoriesEntity).findOneBy(dto);
   }
 
-  async create({ name, description }: { name: string; description?: string }) {
-    const category = await this.findByOne({ name });
-
+  async create(
+    { name, description }: { name: string; description?: string },
+    workspaceId: string,
+  ) {
+    const category = await this.findByOne({ name, workspaceId });
     if (category) throw ApiException.badRequest('Error');
 
     return await this.datasource
       .getRepository(CategoriesEntity)
-      .save({ name, description });
+      .save({ name, description, workspaceId });
   }
 
-  async update({
-    id,
-    name,
-    description,
-  }: {
-    id: string;
-    name?: string;
-    description?: string;
-  }) {
-    const category = await this.findByOne({ id });
-    const existName = await this.findByOne({ name });
+  async update(
+    {
+      id,
+      name,
+      description,
+    }: {
+      id: string;
+      name?: string;
+      description?: string;
+    },
+    workspaceId: string,
+  ) {
+    const category = await this.findByOne({ id, workspaceId });
+    if (!category) throw ApiException.badRequest('Error');
 
-    if (!category || (existName && existName.id !== id))
-      throw ApiException.badRequest('Error');
+    if (name) {
+      const existName = await this.findByOne({ name, workspaceId });
+      if (existName && existName.id !== id)
+        throw ApiException.badRequest('Error');
+    }
 
     await this.datasource
       .getRepository(CategoriesEntity)
@@ -42,14 +50,24 @@ export class CategoriesService {
     return await this.findByOne({ id });
   }
 
-  async delete(id: string) {
+  async delete(id: string, workspaceId: string) {
+    const category = await this.findByOne({ id, workspaceId });
+    if (!category) throw ApiException.badRequest('Error');
+
     await this.datasource.getRepository(CategoriesEntity).delete(id);
     return {
       message: 'Category was deleted',
     };
   }
 
-  async getAll() {
-    return await this.datasource.getRepository(CategoriesEntity).findAndCount();
+  async getAll(workspaceId: string, search?: string) {
+    const where: any = { workspaceId };
+    if (search) {
+      where.name = ILike(`%${search}%`);
+    }
+
+    return await this.datasource
+      .getRepository(CategoriesEntity)
+      .findAndCount({ where });
   }
 }

@@ -6,10 +6,12 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 
 type Category = { name: string; description?: string };
 
@@ -19,22 +21,29 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
-  async create(@Body() dto: Category) {
-    return await this.categoriesService.create(dto);
+  async create(@WorkspaceId() workspaceId: string, @Body() dto: Category) {
+    return await this.categoriesService.create(dto, workspaceId);
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: Category) {
-    return await this.categoriesService.update({ id, ...dto });
+  async update(
+    @WorkspaceId() workspaceId: string,
+    @Param('id') id: string,
+    @Body() dto: Category,
+  ) {
+    return await this.categoriesService.update({ id, ...dto }, workspaceId);
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string) {
-    return await this.categoriesService.delete(id);
+  async delete(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
+    return await this.categoriesService.delete(id, workspaceId);
   }
 
   @Get('all')
-  async getAll() {
-    return await this.categoriesService.getAll();
+  async getAll(
+    @WorkspaceId() workspaceId: string,
+    @Query('search') search?: string,
+  ) {
+    return await this.categoriesService.getAll(workspaceId, search);
   }
 }

@@ -30,7 +30,12 @@ export class SavingAccountService {
     const account = await this.findByOne({ name, workspaceId });
     if (account) throw ApiException.badRequest('Error');
 
-    return this.savingRepository.save({ name, description, amount, workspaceId });
+    return this.savingRepository.save({
+      name,
+      description,
+      amount,
+      workspaceId,
+    });
   }
 
   async update(
@@ -70,8 +75,8 @@ export class SavingAccountService {
     };
   }
 
-  async getAll(workspaceId: string) {
-    const result = await this.savingRepository
+  async getOne(id: string, workspaceId: string) {
+    const qb = this.savingRepository
       .createQueryBuilder('sa')
       .addSelect(
         `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.to_account_id = sa.id AND t.deleted_at IS NULL), 0)`,
@@ -86,7 +91,44 @@ export class SavingAccountService {
         'transactionCount',
       )
       .where('sa.workspaceId = :workspaceId', { workspaceId })
-      .getRawAndEntities<SavingAccountRaw>();
+      .andWhere('sa.id = :id', { id });
+
+    const result = await qb.getRawAndEntities<SavingAccountRaw>();
+
+    if (!result.entities.length) {
+      throw ApiException.badRequest('Account not found');
+    }
+
+    return {
+      ...result.entities[0],
+      spend: result.raw[0].spend,
+      remaining: result.raw[0].remaining,
+      transactionCount: Number(result.raw[0].transactionCount),
+    };
+  }
+
+  async getAll(workspaceId: string, search?: string) {
+    const qb = this.savingRepository
+      .createQueryBuilder('sa')
+      .addSelect(
+        `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.to_account_id = sa.id AND t.deleted_at IS NULL), 0)`,
+        'spend',
+      )
+      .addSelect(
+        `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.from_account_id = sa.id AND t.deleted_at IS NULL), 0)`,
+        'remaining',
+      )
+      .addSelect(
+        `(SELECT COUNT(*) FROM transactions t WHERE (t.to_account_id = sa.id OR t.from_account_id = sa.id) AND t.deleted_at IS NULL)`,
+        'transactionCount',
+      )
+      .where('sa.workspaceId = :workspaceId', { workspaceId });
+
+    if (search) {
+      qb.andWhere('sa.name ILIKE :search', { search: `%${search}%` });
+    }
+
+    const result = await qb.getRawAndEntities<SavingAccountRaw>();
 
     return result.entities.map((entity, i) => ({
       ...entity,
