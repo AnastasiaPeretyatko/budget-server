@@ -12,6 +12,7 @@ import { CategoriesModule } from './domain/categories/categories.module';
 import { SavingAccountModule } from './domain/savings_account/savings_account.module';
 import { TransitionModule } from './domain/transition/transition.module';
 import { WorkspaceModule } from './domain/workspace/workspaces.module';
+import { BillingPeriodModule } from './domain/billing_period/billing_period.module';
 import { HealthController } from './domain/health';
 
 @Module({
@@ -39,6 +40,7 @@ import { HealthController } from './domain/health';
     SavingAccountModule,
     TransitionModule,
     WorkspaceModule,
+    BillingPeriodModule,
   ],
   providers: [],
   controllers: [HealthController],
