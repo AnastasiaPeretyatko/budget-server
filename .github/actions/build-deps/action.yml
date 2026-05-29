@@ -1,0 +1,8 @@
+name: 'Build deps'
+description: 'Install dependencies'
+
+runs:
+  using: 'composite'
+  steps:
+    - run: yarn install
+      shell: sh
