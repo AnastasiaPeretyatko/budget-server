@@ -61,6 +61,13 @@ export class BillingPeriodService {
     return period;
   }
 
+  async getLatest(workspaceId: string): Promise<BillingPeriodEntity | null> {
+    return this.billingPeriodRepository.findOne({
+      where: { workspaceId },
+      order: { startDate: 'DESC' },
+    });
+  }
+
   async getAll(workspaceId: string) {
     return this.billingPeriodRepository.find({
       where: { workspaceId },

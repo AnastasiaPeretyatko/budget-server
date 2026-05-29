@@ -21,7 +21,7 @@ class PagingDto {
 }
 
 class FilterDateDto {
-  @IsDefined()
+  @IsOptional()
   @IsArray()
   @ArrayMinSize(2)
   @ArrayMaxSize(2)
@@ -43,11 +43,11 @@ class FilterDto {
 
   @IsOptional()
   @IsString()
-  categoryId!: string;
+  categoryId?: string;
 
   @IsOptional()
   @Type(() => FilterDateDto)
-  date!: FilterDateDto;
+  date?: FilterDateDto;
 }
 
 export class FindTransitionsDto {

@@ -68,6 +68,6 @@ export class CategoriesService {
 
     return await this.datasource
       .getRepository(CategoriesEntity)
-      .findAndCount({ where });
+      .find({ where });
   }
 }
