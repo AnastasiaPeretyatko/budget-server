@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, In } from 'typeorm';
 import { WorkspaceEntity } from './workspaces.entity';
-import { CreateWorkspaceDto } from './dto';
+import { CreateWorkspaceDto, InviteUsersDto } from './dto';
 import { WorkspaceUserEntity } from './workspace_user.entity';
 import { ApiException } from 'src/common/exceptions/api.exceptions';
 import { UserService } from '../user/user.service';
@@ -68,8 +68,11 @@ export class WorkspaceService {
     }));
   }
 
-  async inviteUser(dto: { workspaceId: string; emails: string[] }) {
+  async inviteUser(currentUserId: string, dto: InviteUsersDto) {
     const { workspaceId, emails } = dto;
+
+    await this.ensureIsMember(currentUserId, workspaceId);
+
     const existingEmails = await this.getWorkspaceEmails(workspaceId);
 
     this.ensureNotInWorkspace(existingEmails, emails);
@@ -80,7 +83,75 @@ export class WorkspaceService {
 
     await this.addUsersToWorkspace(workspaceId, users);
 
-    return 'Success';
+    return { message: 'Users invited successfully' };
+  }
+
+  async getMembers(workspaceId: string) {
+    const workspaceUsers = await this.datasource
+      .getRepository(WorkspaceUserEntity)
+      .find({
+        where: { workspaceId },
+        relations: ['user'],
+      });
+
+    const workspace = await this.datasource
+      .getRepository(WorkspaceEntity)
+      .findOne({ where: { id: workspaceId } });
+
+    return workspaceUsers.map((wu) => ({
+      id: wu.user.id,
+      email: wu.user.email,
+      isOwner: workspace?.ownerId === wu.user.id,
+      joinedAt: wu.createdAt,
+    }));
+  }
+
+  async removeMember(
+    currentUserId: string,
+    workspaceId: string,
+    targetUserId: string,
+  ) {
+    const workspace = await this.datasource
+      .getRepository(WorkspaceEntity)
+      .findOne({ where: { id: workspaceId } });
+
+    if (!workspace) {
+      throw ApiException.notFound('Workspace not found');
+    }
+
+    if (workspace.ownerId !== currentUserId) {
+      throw ApiException.notAllowed(
+        'Only the workspace owner can remove members',
+      );
+    }
+
+    if (targetUserId === currentUserId) {
+      throw ApiException.badRequest(
+        'Owner cannot remove themselves from the workspace',
+      );
+    }
+
+    const membership = await this.datasource
+      .getRepository(WorkspaceUserEntity)
+      .findOne({ where: { workspaceId, userId: targetUserId } });
+
+    if (!membership) {
+      throw ApiException.notFound('User is not a member of this workspace');
+    }
+
+    await this.datasource.getRepository(WorkspaceUserEntity).remove(membership);
+
+    return { message: 'Member removed successfully' };
+  }
+
+  private async ensureIsMember(userId: string, workspaceId: string) {
+    const membership = await this.datasource
+      .getRepository(WorkspaceUserEntity)
+      .findOne({ where: { userId, workspaceId } });
+
+    if (!membership) {
+      throw ApiException.notAllowed('You are not a member of this workspace');
+    }
   }
 
   private async getWorkspaceEmails(workspaceId: string): Promise<Set<string>> {

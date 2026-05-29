@@ -11,12 +11,13 @@ import {
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceMemberGuard } from 'src/common/guards/workspace-member.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 
 type Category = { name: string; description?: string };
 
 @Controller('categories')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceMemberGuard)
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 

@@ -2,10 +2,11 @@ import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { TransitionService } from './transition.service';
 import { CreateTransitionDto, FindTransitionsDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceMemberGuard } from 'src/common/guards/workspace-member.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 
 @Controller('transition')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceMemberGuard)
 export class TransitionController {
   constructor(private readonly transitionService: TransitionService) {}
 
