@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TransitionEntity } from './transition.entity';
-import { DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import {
   CreateTransitionDto,
   FindTransitionsDto,
@@ -10,6 +10,7 @@ import {
 import { ApiException } from 'src/common/exceptions/api.exceptions';
 import { SavingAccountEntity } from '../savings_account/savings_account.entity';
 import { WorkspaceService } from '../workspace/workspaces.service';
+import { BillingPeriodService } from '../billing_period/billing_period.service';
 
 @Injectable()
 export class TransitionService {
@@ -17,13 +18,18 @@ export class TransitionService {
     @InjectRepository(TransitionEntity)
     private readonly transitionRepository: Repository<TransitionEntity>,
     private readonly workspaceService: WorkspaceService,
+    private readonly billingPeriodService: BillingPeriodService,
     private readonly datasource: DataSource,
-  ) {}
+    private readonly logger: Logger,
+  ) {
+    this.logger = new Logger(TransitionService.name);
+  }
 
   public async create(
     dto: CreateTransitionDto,
+    workspaceId: string,
   ): Promise<TransitionEntity | null> {
-    const { fromAccountId, toAccountId, workspaceId } = dto;
+    const { fromAccountId, toAccountId } = dto;
 
     const isExistWorkspace = await this.workspaceService.findById(workspaceId);
 
@@ -51,62 +57,99 @@ export class TransitionService {
         });
       }
 
-      return await manager.getRepository(TransitionEntity).save(dto);
+      return await manager
+        .getRepository(TransitionEntity)
+        .save({ ...dto, workspaceId });
     });
 
     return await this.findOneBy({ id: tr.id });
   }
 
-  public async findAllTransition({
-    paging,
-    filter,
-  }: FindTransitionsDto): Promise<{ rows: TransitionEntity[]; count: number }> {
+  public async findAllTransition(
+    { paging, filter }: FindTransitionsDto,
+    workspaceId: string,
+  ): Promise<{ rows: TransitionEntity[]; count: number }> {
     const limit = paging?.limit ?? 20;
     const offset = paging?.offset ?? 0;
+
+    this.logger.log('Filter', { filter });
 
     const db = this.transitionRepository
       .createQueryBuilder('transition')
       .leftJoinAndSelect('transition.fromAccount', 'fromAccount')
       .leftJoinAndSelect('transition.toAccount', 'toAccount')
-      .leftJoinAndSelect('transition.categories', 'categories')
+      .leftJoinAndSelect('transition.category', 'category')
       .leftJoinAndSelect('transition.workspace', 'workspace')
-      .orderBy('transition.createdAt', 'ASC')
+      .where('transition.workspaceId = :workspaceId', { workspaceId })
+      .orderBy('transition.createdAt', 'DESC')
       .take(limit)
       .skip(offset);
 
-    db.where('transition.workspaceId = :workspaceId', {
-      workspaceId: filter.workspaceId,
-    });
+    await this.applyDateFilter(db, filter, workspaceId);
+    this.applyAccountFilter(db, filter);
 
-    if (filter.date.between) {
+    const [rows, count] = await db.getManyAndCount();
+    return { rows, count };
+  }
+
+  private async applyDateFilter(
+    db: SelectQueryBuilder<TransitionEntity>,
+    filter: FindTransitionsDto['filter'],
+    workspaceId: string,
+  ): Promise<void> {
+    if (filter.date?.between) {
       db.andWhere('transition.createdAt BETWEEN :from AND :to', {
         from: filter.date.between[0],
         to: filter.date.between[1],
       });
+      return;
+    }
+
+    const lastPeriod = await this.billingPeriodService.getLatest(workspaceId);
+
+    if (lastPeriod) {
+      db.andWhere('transition.createdAt BETWEEN :from AND :to', {
+        from: lastPeriod.startDate,
+        to: lastPeriod.endDate,
+      });
     } else {
-      db.andWhere(`transition.createdAt >= NOW() - INTERVAL '7 days'`);
+      db.andWhere(`transition.createdAt >= NOW() - INTERVAL '1 month'`);
+    }
+  }
+
+  private applyAccountFilter(
+    db: SelectQueryBuilder<TransitionEntity>,
+    filter: FindTransitionsDto['filter'],
+  ): void {
+    if (filter?.accountId) {
+      db.andWhere(
+        new Brackets((qb) => {
+          qb.where('transition.fromAccountId = :accountId', {
+            accountId: filter.accountId,
+          }).orWhere('transition.toAccountId = :accountId', {
+            accountId: filter.accountId,
+          });
+        }),
+      );
     }
 
     if (filter?.fromAccountId) {
       db.andWhere('transition.fromAccountId = :fromAccountId', {
-        fromAccountId: filter?.fromAccountId,
+        fromAccountId: filter.fromAccountId,
       });
     }
 
     if (filter?.toAccountId) {
       db.andWhere('transition.toAccountId = :toAccountId', {
-        toAccountId: filter?.toAccountId,
+        toAccountId: filter.toAccountId,
       });
     }
 
     if (filter?.categoryId) {
       db.andWhere('transition.categoryId = :categoryId', {
-        categoryId: filter?.categoryId,
+        categoryId: filter.categoryId,
       });
     }
-
-    const [rows, count] = await db.getManyAndCount();
-    return { rows, count };
   }
 
   public async findOneBy(
@@ -119,7 +162,7 @@ export class TransitionService {
       .createQueryBuilder('transition')
       .leftJoinAndSelect('transition.fromAccount', 'fromAccount')
       .leftJoinAndSelect('transition.toAccount', 'toAccount')
-      .leftJoinAndSelect('transition.categories', 'categories')
+      .leftJoinAndSelect('transition.category', 'category')
       .where(`transition.${key} = :value`, { value })
       .getOne();
   }

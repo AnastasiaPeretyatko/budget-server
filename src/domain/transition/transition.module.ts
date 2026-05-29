@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TransitionEntity } from './transition.entity';
 import { TransitionService } from './transition.service';
@@ -7,6 +7,7 @@ import { SavingAccountEntity } from '../savings_account/savings_account.entity';
 import { WorkspaceEntity } from '../workspace/workspaces.entity';
 import { WorkspaceModule } from '../workspace/workspaces.module';
 import { AuthModule } from '../auth/auth.module';
+import { BillingPeriodModule } from '../billing_period/billing_period.module';
 
 @Module({
   imports: [
@@ -17,9 +18,10 @@ import { AuthModule } from '../auth/auth.module';
     ]),
     WorkspaceModule,
     AuthModule,
+    BillingPeriodModule,
   ],
   controllers: [TransitionController],
-  providers: [TransitionService],
+  providers: [TransitionService, Logger],
   exports: [TransitionService],
 })
 export class TransitionModule {}

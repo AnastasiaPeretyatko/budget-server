@@ -4,6 +4,7 @@ import svcConfig from './svc.config';
 import { SvcConfigService } from './svc.config.service';
 import dbConfig from './db.config';
 import telegramConfig from './telegram.config';
+import appConfig from './app.config';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import telegramConfig from './telegram.config';
         `.env`,
       ],
       isGlobal: true,
-      load: [svcConfig, dbConfig, telegramConfig],
+      load: [svcConfig, dbConfig, telegramConfig, appConfig],
     }),
   ],
   providers: [SvcConfigService, ConfigService],

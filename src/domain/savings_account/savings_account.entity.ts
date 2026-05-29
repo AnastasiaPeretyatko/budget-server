@@ -1,5 +1,6 @@
 import { BaseEntity } from 'src/common';
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { WorkspaceEntity } from '../workspace/workspaces.entity';
 
 @Entity('savings_account')
 export class SavingAccountEntity extends BaseEntity {
@@ -17,4 +18,11 @@ export class SavingAccountEntity extends BaseEntity {
     default: '0',
   })
   amount!: string;
+
+  @Column({ name: 'workspace_id', type: 'uuid', nullable: false })
+  workspaceId!: string;
+
+  @ManyToOne(() => WorkspaceEntity, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'workspace_id' })
+  workspace!: WorkspaceEntity;
 }
