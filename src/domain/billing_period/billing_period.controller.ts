@@ -46,6 +46,11 @@ export class BillingPeriodController {
     return { days };
   }
 
+  @Get('latest')
+  async getLastActivePeriod(@WorkspaceId() workspaceId: string) {
+    return this.billingPeriodService.getLatestActive(workspaceId);
+  }
+
   @Get(':id')
   async getOne(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     return this.billingPeriodService.getOne(id, workspaceId);

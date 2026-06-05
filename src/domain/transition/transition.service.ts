@@ -152,6 +152,12 @@ export class TransitionService {
         categoryId: filter.categoryId,
       });
     }
+
+    if (filter?.type) {
+      db.andWhere('transition.type = :type', {
+        type: filter.type,
+      });
+    }
   }
 
   public async findOneBy(

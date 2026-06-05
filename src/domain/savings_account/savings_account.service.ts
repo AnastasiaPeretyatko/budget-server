@@ -8,6 +8,7 @@ import {
   UpdateSavingAccountDto,
   SavingAccountRaw,
 } from './types';
+import { BillingPeriodService } from '../billing_period/billing_period.service';
 
 @Injectable()
 export class SavingAccountService {
@@ -15,6 +16,7 @@ export class SavingAccountService {
     private readonly datasource: DataSource,
     @InjectRepository(SavingAccountEntity)
     private readonly savingRepository: Repository<SavingAccountEntity>,
+    private readonly billingPeriodService: BillingPeriodService,
   ) {}
 
   async findByOne(dto) {
@@ -68,30 +70,74 @@ export class SavingAccountService {
     const account = await this.findByOne({ id, workspaceId });
     if (!account) throw ApiException.badRequest('Error');
 
-    await this.datasource.getRepository(SavingAccountEntity).delete(id);
+    if (Number(account.amount) !== 0) {
+      throw ApiException.badRequest(
+        'Cannot archive account with non-zero balance',
+      );
+    }
+
+    await this.savingRepository.softDelete(id);
 
     return {
-      message: 'Account was deleted',
+      message: 'Account was archived',
     };
   }
 
+  private async getPeriodDateRange(
+    workspaceId: string,
+  ): Promise<{ from: string; to: string } | null> {
+    const period = await this.billingPeriodService.getLatestActive(workspaceId);
+    if (!period) return null;
+
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+
+    if (period.startDay) {
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const day = today.getDate();
+
+      const from =
+        day >= period.startDay
+          ? new Date(year, month, period.startDay)
+          : new Date(year, month - 1, period.startDay);
+
+      return { from: from.toISOString().slice(0, 10), to: todayStr };
+    }
+
+    if (period.startDate) {
+      return { from: period.startDate, to: todayStr };
+    }
+
+    return null;
+  }
+
   async getOne(id: string, workspaceId: string) {
+    const range = await this.getPeriodDateRange(workspaceId);
+    const dateCondition = range
+      ? `AND t.date BETWEEN :periodFrom AND :periodTo`
+      : '';
+
     const qb = this.savingRepository
       .createQueryBuilder('sa')
       .addSelect(
-        `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.to_account_id = sa.id AND t.deleted_at IS NULL), 0)`,
+        `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.to_account_id = sa.id AND t.deleted_at IS NULL ${dateCondition}), 0)`,
         'spend',
       )
       .addSelect(
-        `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.from_account_id = sa.id AND t.deleted_at IS NULL), 0)`,
+        `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.from_account_id = sa.id AND t.deleted_at IS NULL ${dateCondition}), 0)`,
         'remaining',
       )
       .addSelect(
-        `(SELECT COUNT(*) FROM transactions t WHERE (t.to_account_id = sa.id OR t.from_account_id = sa.id) AND t.deleted_at IS NULL)`,
+        `(SELECT COUNT(*) FROM transactions t WHERE (t.to_account_id = sa.id OR t.from_account_id = sa.id) AND t.deleted_at IS NULL ${dateCondition})`,
         'transactionCount',
       )
       .where('sa.workspaceId = :workspaceId', { workspaceId })
       .andWhere('sa.id = :id', { id });
+
+    if (range) {
+      qb.setParameters({ periodFrom: range.from, periodTo: range.to });
+    }
 
     const result = await qb.getRawAndEntities<SavingAccountRaw>();
 
@@ -108,21 +154,30 @@ export class SavingAccountService {
   }
 
   async getAll(workspaceId: string, search?: string) {
+    const range = await this.getPeriodDateRange(workspaceId);
+    const dateCondition = range
+      ? `AND t.date BETWEEN :periodFrom AND :periodTo`
+      : '';
+
     const qb = this.savingRepository
       .createQueryBuilder('sa')
       .addSelect(
-        `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.to_account_id = sa.id AND t.deleted_at IS NULL), 0)`,
+        `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.to_account_id = sa.id AND t.deleted_at IS NULL ${dateCondition}), 0)`,
         'spend',
       )
       .addSelect(
-        `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.from_account_id = sa.id AND t.deleted_at IS NULL), 0)`,
+        `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.from_account_id = sa.id AND t.deleted_at IS NULL ${dateCondition}), 0)`,
         'remaining',
       )
       .addSelect(
-        `(SELECT COUNT(*) FROM transactions t WHERE (t.to_account_id = sa.id OR t.from_account_id = sa.id) AND t.deleted_at IS NULL)`,
+        `(SELECT COUNT(*) FROM transactions t WHERE (t.to_account_id = sa.id OR t.from_account_id = sa.id) AND t.deleted_at IS NULL ${dateCondition})`,
         'transactionCount',
       )
       .where('sa.workspaceId = :workspaceId', { workspaceId });
+
+    if (range) {
+      qb.setParameters({ periodFrom: range.from, periodTo: range.to });
+    }
 
     if (search) {
       qb.andWhere('sa.name ILIKE :search', { search: `%${search}%` });

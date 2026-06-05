@@ -17,8 +17,18 @@ export class StatisticsController {
     return this.statisticsService.getByCategory(dto, workspaceId);
   }
 
+  @Get('/total-spent')
+  async getTotalSpent(@WorkspaceId() workspaceId: string) {
+    return this.statisticsService.getTotalSpent(workspaceId);
+  }
+
   @Get('/activity')
   async getActivity(@WorkspaceId() workspaceId: string) {
     return this.statisticsService.getActivity(workspaceId);
+  }
+
+  @Get('/top-expenses')
+  async getTopExpenses(@WorkspaceId() workspaceId: string) {
+    return this.statisticsService.getTopExpenses(workspaceId);
   }
 }

@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { TransitionEntity } from '../transition/transition.entity';
+import {
+  TransactionType,
+  TransitionEntity,
+} from '../transition/transition.entity';
 import {
   CategoryStatisticsItem,
   StatisticsByCategoryDto,
@@ -88,6 +91,38 @@ export class StatisticsService {
     };
   }
 
+  async getTotalSpent(
+    workspaceId: string,
+  ): Promise<{ totalSpent: string; totalIncome: string }> {
+    const qb = this.transitionRepository
+      .createQueryBuilder('transition')
+      .select(
+        'COALESCE(SUM(CASE WHEN transition.type = :expense THEN transition.amount ELSE 0 END), 0)',
+        'totalSpent',
+      )
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN transition.type = :income THEN transition.amount ELSE 0 END), 0)',
+        'totalIncome',
+      )
+      .where('transition.workspaceId = :workspaceId', { workspaceId })
+      .setParameters({
+        expense: TransactionType.EXPENSE,
+        income: TransactionType.INCOME,
+      });
+
+    await this.applyDateFilter(qb, workspaceId);
+
+    const result = await qb.getRawOne<{
+      totalSpent: string;
+      totalIncome: string;
+    }>();
+
+    return {
+      totalSpent: Number(result?.totalSpent ?? 0).toFixed(2),
+      totalIncome: Number(result?.totalIncome ?? 0).toFixed(2),
+    };
+  }
+
   async getActivity(workspaceId: string): Promise<ActivityDay[]> {
     const today = new Date();
     const yearAgo = new Date(today);
@@ -118,6 +153,22 @@ export class StatisticsService {
     }
 
     return result;
+  }
+
+  async getTopExpenses(workspaceId: string): Promise<TransitionEntity[]> {
+    const qb = this.transitionRepository
+      .createQueryBuilder('transition')
+      .leftJoinAndSelect('transition.fromAccount', 'fromAccount')
+      .leftJoinAndSelect('transition.category', 'category')
+      .leftJoinAndSelect('transition.createdBy', 'createdBy')
+      .where('transition.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('transition.type = :type', { type: TransactionType.EXPENSE })
+      .orderBy('transition.amount', 'DESC')
+      .limit(10);
+
+    await this.applyDateFilter(qb, workspaceId);
+
+    return qb.getMany();
   }
 
   private applyAccountFilter(

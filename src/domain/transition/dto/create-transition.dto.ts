@@ -1,5 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsDefined, IsOptional, IsString } from 'class-validator';
+import {
+  IsDate,
+  IsDefined,
+  IsEnum,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { TransactionType } from '../transition.entity';
+
 export class CreateTransitionDto {
   @IsString()
   @IsOptional()
@@ -10,8 +18,8 @@ export class CreateTransitionDto {
   toAccountId?: string;
 
   @IsString()
-  @IsOptional()
-  categoryId?: string;
+  @IsDefined()
+  categoryId!: string;
 
   @IsString()
   @IsDefined()
@@ -25,4 +33,8 @@ export class CreateTransitionDto {
   @Type(() => Date)
   @IsDefined()
   date!: Date;
+
+  @IsEnum(TransactionType)
+  @IsOptional()
+  type?: TransactionType;
 }

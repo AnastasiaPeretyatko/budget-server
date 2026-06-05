@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { WorkspaceService } from './workspaces.service';
 import { CreateWorkspaceDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -31,5 +40,13 @@ export class WorkspaceController {
     @Body() dto: { emails: string[] },
   ) {
     return await this.workspaceService.inviteUser({ workspaceId, ...dto });
+  }
+
+  @Delete('/users/:userId')
+  async detachUser(
+    @WorkspaceId() workspaceId: string,
+    @Param('userId') userId: string,
+  ) {
+    return await this.workspaceService.detachUser({ workspaceId, userId });
   }
 }

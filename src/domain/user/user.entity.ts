@@ -12,6 +12,12 @@ export class UserEntity extends BaseEntity {
   @Column({ select: false })
   password!: string;
 
+  @Column({ nullable: true })
+  firstName?: string;
+
+  @Column({ nullable: true })
+  lastName?: string;
+
   @OneToMany(() => WorkspaceUserEntity, (uw) => uw.user)
   userWorkspaces!: WorkspaceUserEntity[];
 

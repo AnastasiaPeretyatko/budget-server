@@ -4,7 +4,8 @@ import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { IUser } from './types';
 import { UserEntity } from './user.entity';
-import { LoginDto } from '../auth/dto/login.dto';
+import { RegisterDto } from '../auth/dto/register.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiException } from 'src/common/exceptions/api.exceptions';
 
 @Injectable()
@@ -20,7 +21,7 @@ export class UserService {
     return this.datasource.getRepository(UserEntity).findOneBy(dto);
   }
 
-  async createUser({ email, password }: LoginDto) {
+  async createUser({ email, password, firstName, lastName }: RegisterDto) {
     const isUsed = await this.findOneBy({ email });
 
     if (isUsed) throw ApiException.badRequest('User is already registered');
@@ -28,8 +29,19 @@ export class UserService {
     const user = new UserEntity();
     user.email = email;
     user.plainPassword = password;
+    user.firstName = firstName;
+    user.lastName = lastName;
 
     await this.datasource.getRepository(UserEntity).save(user);
     return await this.findOneBy({ email });
+  }
+
+  async update(id: string, dto: UpdateUserDto) {
+    const user = await this.findOneBy({ id });
+
+    if (!user) throw ApiException.badRequest('User is not found');
+
+    await this.datasource.getRepository(UserEntity).update(id, dto);
+    return await this.findOneBy({ id });
   }
 }
