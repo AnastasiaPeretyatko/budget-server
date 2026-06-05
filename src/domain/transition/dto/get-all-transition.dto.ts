@@ -3,7 +3,6 @@ import {
   IsString,
   IsNumber,
   IsObject,
-  IsDefined,
   IsArray,
   ArrayMinSize,
   ArrayMaxSize,

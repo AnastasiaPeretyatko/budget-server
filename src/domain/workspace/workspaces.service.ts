@@ -48,6 +48,23 @@ export class WorkspaceService {
       .getOne();
   }
 
+  async getOne(id: string) {
+    const workspace = await this.datasource
+      .getRepository(WorkspaceEntity)
+      .findOne({
+        where: { id },
+        relations: ['owner', 'userWorkspaces', 'userWorkspaces.user'],
+      });
+
+    if (!workspace) {
+      throw ApiException.notFound('Workspace not found');
+    }
+
+    const { userWorkspaces, ...rest } = workspace;
+
+    return { ...rest, users: userWorkspaces.map((u) => u.user) };
+  }
+
   async getAll(userId: string) {
     const { entities, raw } = await this.datasource
       .getRepository(WorkspaceEntity)
@@ -80,7 +97,38 @@ export class WorkspaceService {
 
     await this.addUsersToWorkspace(workspaceId, users);
 
-    return 'Success';
+    return {
+      message: 'Sucsess',
+      data: users,
+    };
+  }
+
+  async detachUser(dto: { workspaceId: string; userId: string }) {
+    const { userId, workspaceId } = dto;
+
+    const workspace = await this.datasource
+      .getRepository(WorkspaceEntity)
+      .findOneBy({ id: workspaceId });
+
+    if (!workspace) throw ApiException.badRequest('Workspace not found');
+
+    if (workspace.ownerId === userId) {
+      throw ApiException.badRequest(
+        'Owner cannot be detached from the workspace',
+      );
+    }
+
+    const userWorkspace = await this.datasource
+      .getRepository(WorkspaceUserEntity)
+      .findOne({
+        where: { workspaceId, userId },
+      });
+
+    if (!userWorkspace) throw ApiException.badRequest('Invalid user id');
+
+    await this.datasource
+      .getRepository(WorkspaceUserEntity)
+      .delete(userWorkspace.id);
   }
 
   private async getWorkspaceEmails(workspaceId: string): Promise<Set<string>> {

@@ -54,7 +54,7 @@ export class CategoriesService {
     const category = await this.findByOne({ id, workspaceId });
     if (!category) throw ApiException.badRequest('Error');
 
-    await this.datasource.getRepository(CategoriesEntity).delete(id);
+    await this.datasource.getRepository(CategoriesEntity).softDelete(id);
     return {
       message: 'Category was deleted',
     };

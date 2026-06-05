@@ -16,11 +16,11 @@ export class BillingPeriodEntity extends BaseEntity {
   @JoinColumn({ name: 'workspace_id' })
   workspace!: WorkspaceEntity;
 
-  @Column({ name: 'start_date', type: 'date', nullable: false })
-  startDate!: string;
+  @Column({ name: 'start_date', type: 'date', nullable: true })
+  startDate!: string | null;
 
-  @Column({ name: 'end_date', type: 'date', nullable: false })
-  endDate!: string;
+  @Column({ name: 'end_date', type: 'date', nullable: true })
+  endDate!: string | null;
 
   @Column({
     type: 'enum',
@@ -29,6 +29,6 @@ export class BillingPeriodEntity extends BaseEntity {
   })
   status!: BillingPeriodStatus;
 
-  @Column({ name: 'start_day', type: 'smallint', nullable: false })
-  startDay!: number;
+  @Column({ name: 'start_day', type: 'smallint', nullable: true })
+  startDay!: number | null;
 }

@@ -40,6 +40,12 @@ export class BillingPeriodController {
     return this.billingPeriodService.delete(id, workspaceId);
   }
 
+  @Get('days-from-start')
+  async getDaysFromStart(@WorkspaceId() workspaceId: string) {
+    const days = await this.billingPeriodService.getDaysFromStart(workspaceId);
+    return { days };
+  }
+
   @Get(':id')
   async getOne(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     return this.billingPeriodService.getOne(id, workspaceId);

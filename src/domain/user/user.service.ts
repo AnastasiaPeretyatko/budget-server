@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { IUser } from './types';
@@ -11,10 +12,9 @@ export class UserService {
   constructor(
     private readonly datasource: DataSource,
     private readonly configService: ConfigService,
-    private readonly logger: Logger,
-  ) {
-    this.logger = new Logger(UserService.name);
-  }
+    @InjectPinoLogger(UserService.name)
+    private readonly logger: PinoLogger,
+  ) {}
 
   async findOneBy(dto: Partial<IUser>) {
     return this.datasource.getRepository(UserEntity).findOneBy(dto);
