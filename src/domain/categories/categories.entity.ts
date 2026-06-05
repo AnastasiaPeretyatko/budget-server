@@ -10,6 +10,9 @@ export class CategoriesEntity extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   description!: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  icon!: string;
+
   @Column({ name: 'workspace_id', type: 'uuid', nullable: false })
   workspaceId!: string;
 

@@ -66,7 +66,7 @@ export class BillingPeriodService {
 
   async getLatest(workspaceId: string): Promise<BillingPeriodEntity | null> {
     return this.billingPeriodRepository.findOne({
-      where: { workspaceId },
+      where: { workspaceId, status: BillingPeriodStatus.ACTIVE },
       order: { startDate: 'DESC' },
     });
   }

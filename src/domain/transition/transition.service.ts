@@ -100,7 +100,7 @@ export class TransitionService {
     workspaceId: string,
   ): Promise<void> {
     if (filter.date?.between) {
-      db.andWhere('transition.createdAt BETWEEN :from AND :to', {
+      db.andWhere('transition.date BETWEEN :from AND :to', {
         from: filter.date.between[0],
         to: filter.date.between[1],
       });
@@ -110,12 +110,12 @@ export class TransitionService {
     const lastPeriod = await this.billingPeriodService.getLatest(workspaceId);
 
     if (lastPeriod) {
-      db.andWhere('transition.createdAt BETWEEN :from AND :to', {
+      db.andWhere('transition.date BETWEEN :from AND :to', {
         from: lastPeriod.startDate,
         to: lastPeriod.endDate,
       });
     } else {
-      db.andWhere(`transition.createdAt >= NOW() - INTERVAL '1 month'`);
+      db.andWhere(`transition.date >= NOW() - INTERVAL '1 month'`);
     }
   }
 
