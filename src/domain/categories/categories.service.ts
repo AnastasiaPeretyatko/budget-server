@@ -12,7 +12,7 @@ export class CategoriesService {
   }
 
   async create(
-    { name, description }: { name: string; description?: string },
+    { name, description, icon }: { name: string; description?: string; icon?: string },
     workspaceId: string,
   ) {
     const category = await this.findByOne({ name, workspaceId });
@@ -20,7 +20,7 @@ export class CategoriesService {
 
     return await this.datasource
       .getRepository(CategoriesEntity)
-      .save({ name, description, workspaceId });
+      .save({ name, description, icon, workspaceId });
   }
 
   async update(
@@ -28,10 +28,12 @@ export class CategoriesService {
       id,
       name,
       description,
+      icon,
     }: {
       id: string;
       name?: string;
       description?: string;
+      icon?: string;
     },
     workspaceId: string,
   ) {
@@ -46,7 +48,7 @@ export class CategoriesService {
 
     await this.datasource
       .getRepository(CategoriesEntity)
-      .update(id, { name, description });
+      .update(id, { name, description, icon });
     return await this.findByOne({ id });
   }
 
@@ -54,7 +56,7 @@ export class CategoriesService {
     const category = await this.findByOne({ id, workspaceId });
     if (!category) throw ApiException.badRequest('Error');
 
-    await this.datasource.getRepository(CategoriesEntity).delete(id);
+    await this.datasource.getRepository(CategoriesEntity).softDelete(id);
     return {
       message: 'Category was deleted',
     };

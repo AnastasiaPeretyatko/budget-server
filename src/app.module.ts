@@ -3,8 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSourceOptions } from 'typeorm';
 import { LoggerModule } from 'nestjs-pino';
-import { pinoPrettyConfig } from './config/pino-pretty.config';
-import { getControllerName } from './common/helpers/get-controller-name.helper';
+import { pinoHttpConfig } from './config/pino-pretty.config';
 import { UserModule } from './domain/user/user.module';
 import { SvcConfigModule } from './config/svc.config.module';
 import { AuthModule } from './domain/auth/auth.module';
@@ -13,19 +12,12 @@ import { SavingAccountModule } from './domain/savings_account/savings_account.mo
 import { TransitionModule } from './domain/transition/transition.module';
 import { WorkspaceModule } from './domain/workspace/workspaces.module';
 import { BillingPeriodModule } from './domain/billing_period/billing_period.module';
+import { StatisticsModule } from './domain/statistics/statistics.module';
 import { HealthController } from './domain/health';
 
 @Module({
   imports: [
-    LoggerModule.forRoot({
-      pinoHttp: {
-        level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
-        transport: pinoPrettyConfig,
-        customProps: (req) => ({
-          context: getControllerName(req),
-        }),
-      },
-    }),
+    LoggerModule.forRoot({ pinoHttp: pinoHttpConfig }),
     SvcConfigModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -41,6 +33,7 @@ import { HealthController } from './domain/health';
     TransitionModule,
     WorkspaceModule,
     BillingPeriodModule,
+    StatisticsModule,
   ],
   providers: [],
   controllers: [HealthController],

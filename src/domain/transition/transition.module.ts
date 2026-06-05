@@ -1,4 +1,4 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TransitionEntity } from './transition.entity';
 import { TransitionService } from './transition.service';
@@ -21,7 +21,7 @@ import { BillingPeriodModule } from '../billing_period/billing_period.module';
     BillingPeriodModule,
   ],
   controllers: [TransitionController],
-  providers: [TransitionService, Logger],
+  providers: [TransitionService],
   exports: [TransitionService],
 })
 export class TransitionModule {}

@@ -2,7 +2,14 @@ import { BaseEntity } from 'src/common';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CategoriesEntity } from '../categories/categories.entity';
 import { SavingAccountEntity } from '../savings_account/savings_account.entity';
+import { UserEntity } from '../user/user.entity';
 import { WorkspaceEntity } from '../workspace/workspaces.entity';
+
+export enum TransactionType {
+  EXPENSE = 'expense',
+  INCOME = 'income',
+  TRANSFER = 'transfer',
+}
 
 @Entity('transactions')
 export class TransitionEntity extends BaseEntity {
@@ -54,4 +61,18 @@ export class TransitionEntity extends BaseEntity {
 
   @Column({ type: 'timestamptz', nullable: false })
   date!: Date;
+
+  @Column({
+    type: 'enum',
+    enum: TransactionType,
+    default: TransactionType.EXPENSE,
+  })
+  type!: TransactionType;
+
+  @Column({ name: 'created_by_id', type: 'uuid', nullable: true })
+  createdById!: string | null;
+
+  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'created_by_id' })
+  createdBy!: UserEntity | null;
 }

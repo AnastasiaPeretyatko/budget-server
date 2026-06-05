@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TransitionEntity } from './transition.entity';
 import { Brackets, DataSource, Repository, SelectQueryBuilder } from 'typeorm';
@@ -20,14 +21,14 @@ export class TransitionService {
     private readonly workspaceService: WorkspaceService,
     private readonly billingPeriodService: BillingPeriodService,
     private readonly datasource: DataSource,
-    private readonly logger: Logger,
-  ) {
-    this.logger = new Logger(TransitionService.name);
-  }
+    @InjectPinoLogger(TransitionService.name)
+    private readonly logger: PinoLogger,
+  ) {}
 
   public async create(
     dto: CreateTransitionDto,
     workspaceId: string,
+    userId: string,
   ): Promise<TransitionEntity | null> {
     const { fromAccountId, toAccountId } = dto;
 
@@ -59,7 +60,7 @@ export class TransitionService {
 
       return await manager
         .getRepository(TransitionEntity)
-        .save({ ...dto, workspaceId });
+        .save({ ...dto, workspaceId, createdById: userId });
     });
 
     return await this.findOneBy({ id: tr.id });
@@ -72,16 +73,17 @@ export class TransitionService {
     const limit = paging?.limit ?? 20;
     const offset = paging?.offset ?? 0;
 
-    this.logger.log('Filter', { filter });
+    this.logger.info({ filter }, 'Filter');
 
     const db = this.transitionRepository
       .createQueryBuilder('transition')
       .leftJoinAndSelect('transition.fromAccount', 'fromAccount')
       .leftJoinAndSelect('transition.toAccount', 'toAccount')
       .leftJoinAndSelect('transition.category', 'category')
+      .leftJoinAndSelect('transition.createdBy', 'createdBy')
       .leftJoinAndSelect('transition.workspace', 'workspace')
       .where('transition.workspaceId = :workspaceId', { workspaceId })
-      .orderBy('transition.createdAt', 'DESC')
+      .orderBy('transition.date', 'DESC')
       .take(limit)
       .skip(offset);
 
@@ -98,7 +100,7 @@ export class TransitionService {
     workspaceId: string,
   ): Promise<void> {
     if (filter.date?.between) {
-      db.andWhere('transition.createdAt BETWEEN :from AND :to', {
+      db.andWhere('transition.date BETWEEN :from AND :to', {
         from: filter.date.between[0],
         to: filter.date.between[1],
       });
@@ -108,12 +110,12 @@ export class TransitionService {
     const lastPeriod = await this.billingPeriodService.getLatest(workspaceId);
 
     if (lastPeriod) {
-      db.andWhere('transition.createdAt BETWEEN :from AND :to', {
+      db.andWhere('transition.date BETWEEN :from AND :to', {
         from: lastPeriod.startDate,
         to: lastPeriod.endDate,
       });
     } else {
-      db.andWhere(`transition.createdAt >= NOW() - INTERVAL '1 month'`);
+      db.andWhere(`transition.date >= NOW() - INTERVAL '1 month'`);
     }
   }
 
@@ -150,6 +152,12 @@ export class TransitionService {
         categoryId: filter.categoryId,
       });
     }
+
+    if (filter?.type) {
+      db.andWhere('transition.type = :type', {
+        type: filter.type,
+      });
+    }
   }
 
   public async findOneBy(
@@ -163,6 +171,7 @@ export class TransitionService {
       .leftJoinAndSelect('transition.fromAccount', 'fromAccount')
       .leftJoinAndSelect('transition.toAccount', 'toAccount')
       .leftJoinAndSelect('transition.category', 'category')
+      .leftJoinAndSelect('transition.createdBy', 'createdBy')
       .where(`transition.${key} = :value`, { value })
       .getOne();
   }

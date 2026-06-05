@@ -1,4 +1,11 @@
-import { IsDefined, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsDefined,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { TransactionType } from '../transition.entity';
 
 export class UpdateTransitionDto {
   @IsString()
@@ -15,9 +22,13 @@ export class UpdateTransitionDto {
 
   @IsInt()
   @IsDefined()
-  amount: string;
+  amount?: string;
 
   @IsString()
   @IsOptional()
   description?: null;
+
+  @IsEnum(TransactionType)
+  @IsOptional()
+  type?: TransactionType;
 }
