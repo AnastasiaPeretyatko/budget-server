@@ -1,24 +1,15 @@
 import type { Options as PinoHttpOptions } from 'pino-http';
+import { join } from 'node:path';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-const devTransport = {
-  target: 'pino-pretty',
-  options: {
-    singleLine: true,
-    colorize: true,
-    levelFirst: true,
-    ignore: 'pid,hostname',
-    translateTime: 'SYS:HH:MM:ss.l',
-    messageFormat: '[{context}] {msg}',
-    customColors:
-      'fatal:bgRed,error:red,warn:yellow,info:green,debug:blue,trace:gray',
-  },
-};
-
 export const pinoHttpConfig: PinoHttpOptions = {
   level: isDev ? 'debug' : 'info',
-  transport: isDev ? devTransport : undefined,
+
+  transport: {
+    target: join(__dirname, 'pino-transport'),
+    options: { colorize: isDev },
+  },
 
   autoLogging: {
     ignore: (req) => req.url === '/health',
@@ -42,20 +33,13 @@ export const pinoHttpConfig: PinoHttpOptions = {
   customErrorMessage: (req, res) =>
     `${req.method} ${req.url} → ${res.statusCode}`,
 
-  customProps: (req) => ({
-    context: getControllerName(req),
+  customLogLevel: (_req, res, err) => {
+    if (res.statusCode >= 500 || err) return 'error';
+    if (res.statusCode >= 400) return 'warn';
+    return 'info';
+  },
+
+  customProps: () => ({
+    context: 'HTTP',
   }),
 };
-
-function getControllerName(req: { url?: string; routerPath?: string }): string {
-  const url = req.url || req.routerPath || '';
-  const pathMatch = url.match(/^\/([^/?]+)/);
-  if (!pathMatch) return 'HTTP';
-
-  return (
-    pathMatch[1]
-      .split('-')
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join('') + 'Controller'
-  );
-}
