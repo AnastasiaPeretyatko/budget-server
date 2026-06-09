@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, ILike } from 'typeorm';
+import { DataSource, FindOptionsWhere, ILike } from 'typeorm';
 import { CategoriesEntity } from './categories.entity';
 import { ApiException } from 'src/common/exceptions/api.exceptions';
 
@@ -12,7 +12,11 @@ export class CategoriesService {
   }
 
   async create(
-    { name, description, icon }: { name: string; description?: string; icon?: string },
+    {
+      name,
+      description,
+      icon,
+    }: { name: string; description?: string; icon?: string },
     workspaceId: string,
   ) {
     const category = await this.findByOne({ name, workspaceId });
@@ -63,7 +67,7 @@ export class CategoriesService {
   }
 
   async getAll(workspaceId: string, search?: string) {
-    const where: any = { workspaceId };
+    const where: FindOptionsWhere<CategoriesEntity> = { workspaceId };
     if (search) {
       where.name = ILike(`%${search}%`);
     }

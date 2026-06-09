@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import { SavingAccountEntity } from './savings_account.entity';
 import { ApiException } from 'src/common/exceptions/api.exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,7 +19,7 @@ export class SavingAccountService {
     private readonly billingPeriodService: BillingPeriodService,
   ) {}
 
-  async findByOne(dto) {
+  async findByOne(dto: FindOptionsWhere<SavingAccountEntity>) {
     return await this.datasource
       .getRepository(SavingAccountEntity)
       .findOneBy(dto);
