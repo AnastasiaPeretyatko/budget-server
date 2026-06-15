@@ -3,12 +3,17 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { TransitionService } from './transition.service';
-import { CreateTransitionDto, FindTransitionsDto } from './dto';
+import {
+  CreateTransitionDto,
+  FindTransitionsDto,
+  UpdateTransitionDto,
+} from './dto';
 import { JwtAuthGuard, type AuthRequest } from '../auth/jwt-auth.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 
@@ -32,6 +37,15 @@ export class TransitionController {
     @Body() dto: FindTransitionsDto,
   ) {
     return this.transitionService.findAllTransition(dto, workspaceId);
+  }
+
+  @Patch(':id')
+  async updateTransition(
+    @WorkspaceId() workspaceId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateTransitionDto,
+  ) {
+    return this.transitionService.update(id, dto, workspaceId);
   }
 
   @Get(':id')

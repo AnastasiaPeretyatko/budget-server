@@ -1,9 +1,11 @@
 import {
+  IsArray,
   IsDefined,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
 import { TransactionType } from '../transition.entity';
 
@@ -31,4 +33,9 @@ export class UpdateTransitionDto {
   @IsEnum(TransactionType)
   @IsOptional()
   type?: TransactionType;
+
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  tagIds?: string[];
 }

@@ -13,6 +13,7 @@ import { TransitionModule } from './domain/transition/transition.module';
 import { WorkspaceModule } from './domain/workspace/workspaces.module';
 import { BillingPeriodModule } from './domain/billing_period/billing_period.module';
 import { StatisticsModule } from './domain/statistics/statistics.module';
+import { TagsModule } from './domain/tags/tags.module';
 import { HealthController } from './domain/health';
 
 @Module({
@@ -34,6 +35,7 @@ import { HealthController } from './domain/health';
     WorkspaceModule,
     BillingPeriodModule,
     StatisticsModule,
+    TagsModule,
   ],
   providers: [],
   controllers: [HealthController],
