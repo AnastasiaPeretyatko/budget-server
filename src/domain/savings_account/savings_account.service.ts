@@ -25,6 +25,10 @@ export class SavingAccountService {
       .findOneBy(dto);
   }
 
+  private sanitizeAmount(amount: string): string {
+    return amount.replace(',', '.');
+  }
+
   async create(
     { name, description, amount }: CreateSavingAccountDto,
     workspaceId: string,
@@ -35,7 +39,7 @@ export class SavingAccountService {
     return this.savingRepository.save({
       name,
       description,
-      amount,
+      amount: this.sanitizeAmount(amount),
       workspaceId,
     });
   }
@@ -60,7 +64,7 @@ export class SavingAccountService {
     await this.datasource.getRepository(SavingAccountEntity).update(id, {
       name,
       description,
-      amount,
+      amount: amount !== undefined ? this.sanitizeAmount(amount) : undefined,
     });
 
     return await this.findByOne({ id });

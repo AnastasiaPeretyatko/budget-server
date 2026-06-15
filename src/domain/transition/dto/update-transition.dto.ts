@@ -1,11 +1,11 @@
+import { Transform } from 'class-transformer';
 import {
   IsArray,
-  IsDefined,
   IsEnum,
-  IsInt,
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
 } from 'class-validator';
 import { TransactionType } from '../transition.entity';
 
@@ -22,8 +22,11 @@ export class UpdateTransitionDto {
   @IsOptional()
   categoryId?: string;
 
-  @IsInt()
-  @IsDefined()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.replace(',', '.') : value,
+  )
+  @Matches(/^\d+(\.\d{1,2})?$/, { message: 'amount must be a valid number' })
+  @IsOptional()
   amount?: string;
 
   @IsString()
