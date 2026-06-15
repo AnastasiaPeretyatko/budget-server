@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { InjectRepository } from '@nestjs/typeorm';
-import { TransitionEntity } from './transition.entity';
-import { Brackets, DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { TransitionEntity, TransactionType } from './transition.entity';
+import {
+  Brackets,
+  DataSource,
+  EntityManager,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import {
   CreateTransitionDto,
   FindTransitionsDto,
@@ -30,33 +36,20 @@ export class TransitionService {
     workspaceId: string,
     userId: string,
   ): Promise<TransitionEntity | null> {
-    const { fromAccountId, toAccountId } = dto;
-
     const isExistWorkspace = await this.workspaceService.findById(workspaceId);
 
     if (!isExistWorkspace)
       throw ApiException.badRequest('This workspace does not exist');
 
     const tr = await this.datasource.transaction(async (manager) => {
-      const repo = manager.getRepository(SavingAccountEntity);
-
-      if (fromAccountId) {
-        const fromAccount = await repo.findOneByOrFail({ id: fromAccountId });
-
-        if (Number(fromAccount.amount) < Number(dto.amount)) {
-          throw ApiException.badRequest('Not enough funds');
-        }
-
-        await repo.update(fromAccountId, {
-          amount: () => `amount - ${dto.amount}`,
-        });
-      }
-
-      if (toAccountId) {
-        await repo.update(toAccountId, {
-          amount: () => `amount + ${dto.amount}`,
-        });
-      }
+      await this.applyBalanceEffect(
+        manager,
+        dto.type ?? TransactionType.EXPENSE,
+        dto.fromAccountId,
+        dto.toAccountId,
+        dto.amount,
+        'apply',
+      );
 
       return await manager
         .getRepository(TransitionEntity)
@@ -176,17 +169,114 @@ export class TransitionService {
       .getOne();
   }
 
-  public async update(id: string, dto: UpdateTransitionDto) {
+  public async update(
+    id: string,
+    dto: UpdateTransitionDto,
+  ): Promise<TransitionEntity | null> {
+    const old = await this.findOneBy({ id });
+
+    if (!old) throw ApiException.badRequest('There is no such transaction!');
+
+    await this.datasource.transaction(async (manager) => {
+      await this.applyBalanceEffect(
+        manager,
+        old.type,
+        old.fromAccountId,
+        old.toAccountId,
+        old.amount,
+        'reverse',
+      );
+
+      const newType = dto.type ?? old.type;
+      const newFromAccountId =
+        dto.fromAccountId !== undefined ? dto.fromAccountId : old.fromAccountId;
+      const newToAccountId =
+        dto.toAccountId !== undefined ? dto.toAccountId : old.toAccountId;
+      const newAmount = dto.amount ?? old.amount;
+
+      await this.applyBalanceEffect(
+        manager,
+        newType,
+        newFromAccountId,
+        newToAccountId,
+        newAmount,
+        'apply',
+      );
+
+      await manager.getRepository(TransitionEntity).update(id, { ...dto });
+    });
+
+    return await this.findOneBy({ id });
+  }
+
+  public async remove(id: string): Promise<void> {
     const transition = await this.findOneBy({ id });
 
     if (!transition)
       throw ApiException.badRequest('There is no such transaction!');
 
-    return await this.transitionRepository
-      .createQueryBuilder()
-      .update()
-      .where('id = :id', { id })
-      .set(dto)
-      .execute();
+    await this.datasource.transaction(async (manager) => {
+      await this.applyBalanceEffect(
+        manager,
+        transition.type,
+        transition.fromAccountId,
+        transition.toAccountId,
+        transition.amount,
+        'reverse',
+      );
+
+      await manager.getRepository(TransitionEntity).softDelete(id);
+    });
+  }
+
+  /**
+   * Applies or reverses the balance effect of a transaction on the involved accounts.
+   * direction='apply'   → deduct from source, credit to destination
+   * direction='reverse' → credit back to source, deduct from destination
+   */
+  private async applyBalanceEffect(
+    manager: EntityManager,
+    type: TransactionType,
+    fromAccountId: string | null | undefined,
+    toAccountId: string | null | undefined,
+    amount: string,
+    direction: 'apply' | 'reverse',
+  ): Promise<void> {
+    const repo = manager.getRepository(SavingAccountEntity);
+    const isApply = direction === 'apply';
+
+    if (
+      (type === TransactionType.EXPENSE || type === TransactionType.TRANSFER) &&
+      fromAccountId
+    ) {
+      if (isApply) {
+        const account = await repo.findOneByOrFail({ id: fromAccountId });
+        if (Number(account.amount) < Number(amount)) {
+          throw ApiException.badRequest('Not enough funds');
+        }
+        await repo.update(fromAccountId, {
+          amount: () => `amount - ${amount}`,
+        });
+      } else {
+        await repo.update(fromAccountId, {
+          amount: () => `amount + ${amount}`,
+        });
+      }
+    }
+
+    if (
+      (type === TransactionType.INCOME || type === TransactionType.TRANSFER) &&
+      toAccountId
+    ) {
+      if (isApply) {
+        await repo.update(toAccountId, {
+          amount: () => `amount + ${amount}`,
+        });
+      } else {
+        await repo.update(toAccountId, {
+          amount: () => `amount - ${amount}`,
+        });
+      }
+    }
   }
 }
