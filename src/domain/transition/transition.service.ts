@@ -111,7 +111,7 @@ export class TransitionService {
     filter: FindTransitionsDto['filter'],
     workspaceId: string,
   ): Promise<void> {
-    if (filter.date?.between) {
+    if (filter?.date?.between) {
       db.andWhere('transition.date BETWEEN :from AND :to', {
         from: filter.date.between[0],
         to: filter.date.between[1],

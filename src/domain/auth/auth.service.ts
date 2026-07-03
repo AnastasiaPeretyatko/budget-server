@@ -87,4 +87,11 @@ export class AuthService {
       throw ApiException.unautorized('Refresh token invalid');
     }
   }
+
+  async me(id: string) {
+    const user = await this.userService.findOneBy({ id });
+
+    if (!user) throw ApiException.unautorized('Пользователь не найден');
+    return user;
+  }
 }
