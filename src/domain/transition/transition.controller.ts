@@ -15,10 +15,11 @@ import {
   UpdateTransitionDto,
 } from './dto';
 import { JwtAuthGuard, type AuthRequest } from '../auth/jwt-auth.guard';
+import { WorkspaceMemberGuard } from 'src/common/guards/workspace-member.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 
 @Controller('transition')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceMemberGuard)
 export class TransitionController {
   constructor(private readonly transitionService: TransitionService) {}
 

@@ -12,10 +12,11 @@ import {
 } from '@nestjs/common';
 import { SavingAccountService } from './savings_account.service';
 import { JwtAuthGuard, type AuthRequest } from '../auth/jwt-auth.guard';
+import { WorkspaceMemberGuard } from 'src/common/guards/workspace-member.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 import type { CreateSavingAccountDto } from './types';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceMemberGuard)
 @Controller('saving')
 export class SavingAccountController {
   constructor(private readonly savingAccountService: SavingAccountService) {}
