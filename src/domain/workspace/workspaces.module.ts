@@ -1,4 +1,4 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { WorkspaceEntity } from './workspaces.entity';
@@ -21,7 +21,7 @@ import { WorkspaceUserEntity } from './workspace_user.entity';
     UserModule,
   ],
   controllers: [WorkspaceController],
-  providers: [Logger, WorkspaceService],
+  providers: [WorkspaceService],
   exports: [WorkspaceService],
 })
 export class WorkspaceModule {}

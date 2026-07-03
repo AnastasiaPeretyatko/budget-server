@@ -13,6 +13,7 @@ import { CreateWorkspaceDto, InviteUsersDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceMemberGuard } from 'src/common/guards/workspace-member.guard';
 import type { AuthRequest } from '../auth/jwt-auth.guard';
+import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('workspace')
@@ -27,6 +28,11 @@ export class WorkspaceController {
   @Get()
   async getAll(@Req() req: AuthRequest) {
     return await this.workspaceService.getAll(req.user.id);
+  }
+
+  @Get('/current')
+  async getOne(@WorkspaceId() workspaceId: string) {
+    return await this.workspaceService.getOne(workspaceId);
   }
 
   @Post('/invite')

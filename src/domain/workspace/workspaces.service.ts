@@ -48,6 +48,23 @@ export class WorkspaceService {
       .getOne();
   }
 
+  async getOne(id: string) {
+    const workspace = await this.datasource
+      .getRepository(WorkspaceEntity)
+      .findOne({
+        where: { id },
+        relations: ['owner', 'userWorkspaces', 'userWorkspaces.user'],
+      });
+
+    if (!workspace) {
+      throw ApiException.notFound('Workspace not found');
+    }
+
+    const { userWorkspaces, ...rest } = workspace;
+
+    return { ...rest, users: userWorkspaces.map((u) => u.user) };
+  }
+
   async getAll(userId: string) {
     const { entities, raw } = await this.datasource
       .getRepository(WorkspaceEntity)

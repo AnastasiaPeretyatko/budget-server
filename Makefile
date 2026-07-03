@@ -32,6 +32,9 @@ build:
 app:
 	${DOCKER_COMPOSE_RUN} -e "NODE_ENV=${NODE_ENV}" --service-ports app
 
+lint:
+	${DOCKER_COMPOSE_RUN} -e "NODE_ENV=test" app yarn lint
+
 migrate:
 	${DOCKER_COMPOSE_RUN} -e "NODE_ENV=${NODE_ENV}" app npm run migration:up
 

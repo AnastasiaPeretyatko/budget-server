@@ -5,6 +5,8 @@ import { ZodValidationPipe } from 'src/common/utils/zod-validation.pipe';
 
 import { LoginSchema } from './dto/login.dto';
 import type { LoginDto } from './dto/login.dto';
+import { RegisterSchema } from './dto/register.dto';
+import type { RegisterDto } from './dto/register.dto';
 
 import { AuthService } from './auth.service';
 
@@ -20,8 +22,8 @@ export class AuthController {
   }
 
   @Post('/register')
-  @UsePipes(new ZodValidationPipe(LoginSchema))
-  async register(@Body() dto: LoginDto) {
+  @UsePipes(new ZodValidationPipe(RegisterSchema))
+  async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 

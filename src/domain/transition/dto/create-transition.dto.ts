@@ -1,5 +1,16 @@
-import { Type } from 'class-transformer';
-import { IsDate, IsDefined, IsOptional, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsArray,
+  IsDate,
+  IsDefined,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+} from 'class-validator';
+import { TransactionType } from '../transition.entity';
+
 export class CreateTransitionDto {
   @IsString()
   @IsOptional()
@@ -10,10 +21,13 @@ export class CreateTransitionDto {
   toAccountId?: string;
 
   @IsString()
-  @IsOptional()
-  categoryId?: string;
+  @IsDefined()
+  categoryId!: string;
 
-  @IsString()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.replace(',', '.') : value,
+  )
+  @Matches(/^\d+(\.\d{1,2})?$/, { message: 'amount must be a valid number' })
   @IsDefined()
   amount!: string;
 
@@ -25,4 +39,13 @@ export class CreateTransitionDto {
   @Type(() => Date)
   @IsDefined()
   date!: Date;
+
+  @IsEnum(TransactionType)
+  @IsOptional()
+  type?: TransactionType;
+
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  tagIds?: string[];
 }

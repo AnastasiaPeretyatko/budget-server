@@ -3,12 +3,13 @@ import {
   IsString,
   IsNumber,
   IsObject,
-  IsDefined,
   IsArray,
+  IsEnum,
   ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { TransactionType } from '../transition.entity';
 
 class PagingDto {
   @IsOptional()
@@ -48,6 +49,10 @@ class FilterDto {
   @IsOptional()
   @Type(() => FilterDateDto)
   date?: FilterDateDto;
+
+  @IsOptional()
+  @IsEnum(TransactionType)
+  type?: TransactionType;
 }
 
 export class FindTransitionsDto {

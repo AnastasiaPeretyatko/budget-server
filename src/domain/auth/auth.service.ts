@@ -4,6 +4,7 @@ import { JwtService, JwtSignOptions, TokenExpiredError } from '@nestjs/jwt';
 import { ApiException } from 'src/common/exceptions/api.exceptions';
 
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { UserService } from '../user/user.service';
 import { IUser } from '../user/types';
 import { DataSource } from 'typeorm';
@@ -29,7 +30,7 @@ export class AuthService {
     };
   }
 
-  async register(dto: LoginDto) {
+  async register(dto: RegisterDto) {
     const user = await this.userService.createUser(dto);
     if (!user) throw ApiException.serverError('Something some wrong!');
 
