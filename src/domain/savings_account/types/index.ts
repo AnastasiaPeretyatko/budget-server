@@ -12,7 +12,7 @@ export interface UpdateSavingAccountDto {
 }
 
 export interface SavingAccountRaw {
-  spend: string;
-  remaining: string;
+  periodIncome: string;
+  periodExpense: string;
   transactionCount: string;
 }

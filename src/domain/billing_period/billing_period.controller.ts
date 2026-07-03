@@ -40,15 +40,16 @@ export class BillingPeriodController {
     return this.billingPeriodService.delete(id, workspaceId);
   }
 
-  @Get('days-from-start')
-  async getDaysFromStart(@WorkspaceId() workspaceId: string) {
-    const days = await this.billingPeriodService.getDaysFromStart(workspaceId);
-    return { days };
-  }
+  // @Get('days-from-start')
+  // async getDaysFromStart(@WorkspaceId() workspaceId: string) {
+  //   const days = await this.billingPeriodService.getDaysFromStart(workspaceId);
+  //   return { days };
+  // }
 
   @Get('latest')
   async getLastActivePeriod(@WorkspaceId() workspaceId: string) {
-    return this.billingPeriodService.getLatestActive(workspaceId);
+    const period = await this.billingPeriodService.getLatestActive(workspaceId);
+    return { data: period };
   }
 
   @Get(':id')

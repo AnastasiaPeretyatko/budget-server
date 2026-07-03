@@ -9,6 +9,10 @@ import {
   SavingAccountRaw,
 } from './types';
 import { BillingPeriodService } from '../billing_period/billing_period.service';
+import {
+  TransitionEntity,
+  TransactionType,
+} from '../transition/transition.entity';
 
 @Injectable()
 export class SavingAccountService {
@@ -32,15 +36,42 @@ export class SavingAccountService {
   async create(
     { name, description, amount }: CreateSavingAccountDto,
     workspaceId: string,
+    userId?: string,
   ): Promise<SavingAccountEntity> {
     const account = await this.findByOne({ name, workspaceId });
     if (account) throw ApiException.badRequest('Error');
 
-    return this.savingRepository.save({
-      name,
-      description,
-      amount: this.sanitizeAmount(amount),
-      workspaceId,
+    const sanitizedAmount = this.sanitizeAmount(amount);
+
+    return this.datasource.transaction(async (manager) => {
+      const savedAccount = await manager
+        .getRepository(SavingAccountEntity)
+        .save({
+          name,
+          description,
+          amount: '0',
+          workspaceId,
+        });
+
+      if (Number(sanitizedAmount) > 0) {
+        await manager
+          .getRepository(SavingAccountEntity)
+          .update(savedAccount.id, {
+            amount: () => `amount + ${sanitizedAmount}`,
+          });
+
+        await manager.getRepository(TransitionEntity).save({
+          toAccountId: savedAccount.id,
+          fromAccountId: null,
+          amount: sanitizedAmount,
+          type: TransactionType.INCOME,
+          date: new Date(),
+          workspaceId,
+          createdById: userId ?? null,
+        });
+      }
+
+      return savedAccount;
     });
   }
 
@@ -126,11 +157,11 @@ export class SavingAccountService {
       .createQueryBuilder('sa')
       .addSelect(
         `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.to_account_id = sa.id AND t.deleted_at IS NULL ${dateCondition}), 0)`,
-        'spend',
+        'periodIncome',
       )
       .addSelect(
         `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.from_account_id = sa.id AND t.deleted_at IS NULL ${dateCondition}), 0)`,
-        'remaining',
+        'periodExpense',
       )
       .addSelect(
         `(SELECT COUNT(*) FROM transactions t WHERE (t.to_account_id = sa.id OR t.from_account_id = sa.id) AND t.deleted_at IS NULL ${dateCondition})`,
@@ -149,10 +180,19 @@ export class SavingAccountService {
       throw ApiException.badRequest('Account not found');
     }
 
+    const entity = result.entities[0];
+    const periodIncome = Number(result.raw[0].periodIncome);
+    const periodExpense = Number(result.raw[0].periodExpense);
+
     return {
-      ...result.entities[0],
-      spend: result.raw[0].spend,
-      remaining: result.raw[0].remaining,
+      ...entity,
+      periodIncome: periodIncome.toFixed(2),
+      periodExpense: periodExpense.toFixed(2),
+      periodStartBalance: (
+        Number(entity.amount) -
+        periodIncome +
+        periodExpense
+      ).toFixed(2),
       transactionCount: Number(result.raw[0].transactionCount),
     };
   }
@@ -167,11 +207,11 @@ export class SavingAccountService {
       .createQueryBuilder('sa')
       .addSelect(
         `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.to_account_id = sa.id AND t.deleted_at IS NULL ${dateCondition}), 0)`,
-        'spend',
+        'periodIncome',
       )
       .addSelect(
         `COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.from_account_id = sa.id AND t.deleted_at IS NULL ${dateCondition}), 0)`,
-        'remaining',
+        'periodExpense',
       )
       .addSelect(
         `(SELECT COUNT(*) FROM transactions t WHERE (t.to_account_id = sa.id OR t.from_account_id = sa.id) AND t.deleted_at IS NULL ${dateCondition})`,
@@ -189,11 +229,21 @@ export class SavingAccountService {
 
     const result = await qb.getRawAndEntities<SavingAccountRaw>();
 
-    return result.entities.map((entity, i) => ({
-      ...entity,
-      spend: result.raw[i].spend,
-      remaining: result.raw[i].remaining,
-      transactionCount: Number(result.raw[i].transactionCount),
-    }));
+    return result.entities.map((entity, i) => {
+      const periodIncome = Number(result.raw[i].periodIncome);
+      const periodExpense = Number(result.raw[i].periodExpense);
+
+      return {
+        ...entity,
+        periodIncome: periodIncome.toFixed(2),
+        periodExpense: periodExpense.toFixed(2),
+        periodStartBalance: (
+          Number(entity.amount) -
+          periodIncome +
+          periodExpense
+        ).toFixed(2),
+        transactionCount: Number(result.raw[i].transactionCount),
+      };
+    });
   }
 }

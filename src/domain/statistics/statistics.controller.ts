@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { StatisticsService } from './statistics.service';
 import { StatisticsByCategoryDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -30,5 +30,18 @@ export class StatisticsController {
   @Get('/top-expenses')
   async getTopExpenses(@WorkspaceId() workspaceId: string) {
     return this.statisticsService.getTopExpenses(workspaceId);
+  }
+
+  @Get('/dashboard')
+  async getDashboardSummary(@WorkspaceId() workspaceId: string) {
+    return this.statisticsService.getDashboardSummary(workspaceId);
+  }
+
+  @Get('/balance-history')
+  async getBalanceHistory(
+    @WorkspaceId() workspaceId: string,
+    @Query('accountId') accountId: string,
+  ) {
+    return this.statisticsService.getBalanceHistory(accountId, workspaceId);
   }
 }

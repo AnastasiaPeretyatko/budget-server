@@ -7,10 +7,11 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { SavingAccountService } from './savings_account.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard, type AuthRequest } from '../auth/jwt-auth.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 import type { CreateSavingAccountDto } from './types';
 
@@ -21,10 +22,15 @@ export class SavingAccountController {
 
   @Post()
   async create(
+    @Req() req: AuthRequest,
     @WorkspaceId() workspaceId: string,
     @Body() dto: CreateSavingAccountDto,
   ) {
-    return await this.savingAccountService.create(dto, workspaceId);
+    return await this.savingAccountService.create(
+      dto,
+      workspaceId,
+      req.user.id,
+    );
   }
 
   @Patch(':id')
