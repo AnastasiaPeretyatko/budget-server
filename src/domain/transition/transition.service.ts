@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { InjectRepository } from '@nestjs/typeorm';
-import { TransitionEntity } from './transition.entity';
-import { Brackets, DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { TransitionEntity, TransactionType } from './transition.entity';
+import {
+  Brackets,
+  DataSource,
+  EntityManager,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import {
   CreateTransitionDto,
   FindTransitionsDto,
@@ -32,46 +38,30 @@ export class TransitionService {
     workspaceId: string,
     userId: string,
   ): Promise<TransitionEntity | null> {
-    const { fromAccountId, toAccountId, tagIds, ...rest } = dto;
-
     const isExistWorkspace = await this.workspaceService.findById(workspaceId);
 
     if (!isExistWorkspace)
       throw ApiException.badRequest('This workspace does not exist');
+
+    const { tagIds, ...rest } = dto;
 
     const tags = tagIds?.length
       ? await this.tagsService.findByIds(tagIds, workspaceId)
       : [];
 
     const tr = await this.datasource.transaction(async (manager) => {
-      const repo = manager.getRepository(SavingAccountEntity);
+      await this.applyBalanceEffect(
+        manager,
+        dto.type ?? TransactionType.EXPENSE,
+        dto.fromAccountId,
+        dto.toAccountId,
+        dto.amount,
+        'apply',
+      );
 
-      if (fromAccountId) {
-        const fromAccount = await repo.findOneByOrFail({ id: fromAccountId });
-
-        if (Number(fromAccount.amount) < Number(dto.amount)) {
-          throw ApiException.badRequest('Not enough funds');
-        }
-
-        await repo.update(fromAccountId, {
-          amount: () => `amount - ${dto.amount}`,
-        });
-      }
-
-      if (toAccountId) {
-        await repo.update(toAccountId, {
-          amount: () => `amount + ${dto.amount}`,
-        });
-      }
-
-      return await manager.getRepository(TransitionEntity).save({
-        ...rest,
-        fromAccountId,
-        toAccountId,
-        workspaceId,
-        createdById: userId,
-        tags,
-      });
+      return await manager
+        .getRepository(TransitionEntity)
+        .save({ ...rest, workspaceId, createdById: userId, tags });
     });
 
     return await this.findOneBy({ id: tr.id });
@@ -101,6 +91,7 @@ export class TransitionService {
 
     await this.applyDateFilter(db, filter, workspaceId);
     this.applyAccountFilter(db, filter);
+    this.applyTagFilter(db, filter);
 
     const [rows, count] = await db.getManyAndCount();
     return { rows, count };
@@ -172,6 +163,34 @@ export class TransitionService {
     }
   }
 
+  private applyTagFilter(
+    db: SelectQueryBuilder<TransitionEntity>,
+    filter: FindTransitionsDto['filter'],
+  ): void {
+    if (!filter?.tag) return;
+
+    if (filter?.tag?.eq) {
+      db.andWhere(
+        `EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt.transaction_id = transition.id AND tt.tag_id = :tagEq)`,
+        { tagEq: filter.tag.eq },
+      );
+    }
+
+    if (filter.tag?.in?.length) {
+      db.andWhere(
+        `EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt.transaction_id = transition.id AND tt.tag_id IN (:...tagIn))`,
+        { tagIn: filter?.tag?.in },
+      );
+    }
+
+    if (filter?.tag?.nin?.length) {
+      db.andWhere(
+        `NOT EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt.transaction_id = transition.id AND tt.tag_id IN (:...tagNin))`,
+        { tagNin: filter?.tag?.nin },
+      );
+    }
+  }
+
   public async findOneBy(
     dto: Record<string, string>,
   ): Promise<TransitionEntity | null> {
@@ -192,36 +211,136 @@ export class TransitionService {
   public async update(
     id: string,
     dto: UpdateTransitionDto,
-    workspaceId: string,
-  ) {
+  ): Promise<TransitionEntity | null> {
+    const old = await this.findOneBy({ id });
+
+    if (!old) throw ApiException.badRequest('There is no such transaction!');
+
+    const { tagIds, ...rest } = dto;
+
+    await this.datasource.transaction(async (manager) => {
+      await this.applyBalanceEffect(
+        manager,
+        old.type,
+        old.fromAccountId,
+        old.toAccountId,
+        old.amount,
+        'reverse',
+      );
+
+      const newType = rest.type ?? old.type;
+      const newFromAccountId =
+        rest.fromAccountId !== undefined
+          ? rest.fromAccountId
+          : old.fromAccountId;
+      const newToAccountId =
+        rest.toAccountId !== undefined ? rest.toAccountId : old.toAccountId;
+      const newAmount = rest.amount ?? old.amount;
+
+      await this.applyBalanceEffect(
+        manager,
+        newType,
+        newFromAccountId,
+        newToAccountId,
+        newAmount,
+        'apply',
+      );
+
+      const fieldsToUpdate = Object.fromEntries(
+        Object.entries(rest).filter(([, v]) => v !== undefined),
+      );
+
+      if (Object.keys(fieldsToUpdate).length) {
+        await manager
+          .getRepository(TransitionEntity)
+          .update(id, fieldsToUpdate);
+      }
+
+      if (tagIds !== undefined) {
+        const tags = tagIds.length
+          ? await this.tagsService.findByIds(tagIds, old.workspaceId)
+          : [];
+
+        await manager
+          .getRepository(TransitionEntity)
+          .createQueryBuilder()
+          .relation(TransitionEntity, 'tags')
+          .of(id)
+          .addAndRemove(tags, old.tags ?? []);
+      }
+    });
+
+    return await this.findOneBy({ id });
+  }
+
+  public async remove(id: string): Promise<void> {
     const transition = await this.findOneBy({ id });
 
     if (!transition)
       throw ApiException.badRequest('There is no such transaction!');
 
-    const { tagIds, ...rest } = dto;
+    await this.datasource.transaction(async (manager) => {
+      await this.applyBalanceEffect(
+        manager,
+        transition.type,
+        transition.fromAccountId,
+        transition.toAccountId,
+        transition.amount,
+        'reverse',
+      );
 
-    if (Object.keys(rest).length) {
-      await this.transitionRepository
-        .createQueryBuilder()
-        .update()
-        .where('id = :id', { id })
-        .set(rest)
-        .execute();
+      await manager.getRepository(TransitionEntity).softDelete(id);
+    });
+  }
+
+  /**
+   * Applies or reverses the balance effect of a transaction on the involved accounts.
+   * direction='apply'   → deduct from source, credit to destination
+   * direction='reverse' → credit back to source, deduct from destination
+   */
+  private async applyBalanceEffect(
+    manager: EntityManager,
+    type: TransactionType,
+    fromAccountId: string | null | undefined,
+    toAccountId: string | null | undefined,
+    amount: string,
+    direction: 'apply' | 'reverse',
+  ): Promise<void> {
+    const repo = manager.getRepository(SavingAccountEntity);
+    const isApply = direction === 'apply';
+
+    if (
+      (type === TransactionType.EXPENSE || type === TransactionType.TRANSFER) &&
+      fromAccountId
+    ) {
+      if (isApply) {
+        const account = await repo.findOneByOrFail({ id: fromAccountId });
+        if (Number(account.amount) < Number(amount)) {
+          throw ApiException.badRequest('Не достаточно средств');
+        }
+        await repo.update(fromAccountId, {
+          amount: () => `amount - ${amount}`,
+        });
+      } else {
+        await repo.update(fromAccountId, {
+          amount: () => `amount + ${amount}`,
+        });
+      }
     }
 
-    if (tagIds !== undefined) {
-      const tags = tagIds.length
-        ? await this.tagsService.findByIds(tagIds, workspaceId)
-        : [];
-
-      await this.transitionRepository
-        .createQueryBuilder()
-        .relation(TransitionEntity, 'tags')
-        .of(id)
-        .addAndRemove(tags, transition.tags ?? []);
+    if (
+      (type === TransactionType.INCOME || type === TransactionType.TRANSFER) &&
+      toAccountId
+    ) {
+      if (isApply) {
+        await repo.update(toAccountId, {
+          amount: () => `amount + ${amount}`,
+        });
+      } else {
+        await repo.update(toAccountId, {
+          amount: () => `amount - ${amount}`,
+        });
+      }
     }
-
-    return await this.findOneBy({ id });
   }
 }

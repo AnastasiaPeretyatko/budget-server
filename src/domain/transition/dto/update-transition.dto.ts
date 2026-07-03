@@ -1,12 +1,14 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
+  IsDate,
   IsEnum,
   IsOptional,
   IsString,
   IsUUID,
   Matches,
 } from 'class-validator';
+
 import { TransactionType } from '../transition.entity';
 
 export class UpdateTransitionDto {
@@ -41,4 +43,9 @@ export class UpdateTransitionDto {
   @IsUUID('4', { each: true })
   @IsOptional()
   tagIds?: string[];
+
+  @IsDate()
+  @Type(() => Date)
+  @IsOptional()
+  date?: Date;
 }

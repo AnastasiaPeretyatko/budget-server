@@ -7,6 +7,7 @@ import {
   IsEnum,
   ArrayMinSize,
   ArrayMaxSize,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TransactionType } from '../transition.entity';
@@ -27,6 +28,22 @@ class FilterDateDto {
   @ArrayMinSize(2)
   @ArrayMaxSize(2)
   between!: string[];
+}
+
+class FilterTagDto {
+  @IsOptional()
+  @IsUUID('4')
+  eq?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  in?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  nin?: string[];
 }
 
 class FilterDto {
@@ -53,6 +70,10 @@ class FilterDto {
   @IsOptional()
   @IsEnum(TransactionType)
   type?: TransactionType;
+
+  @IsOptional()
+  @Type(() => FilterTagDto)
+  tag?: FilterTagDto;
 }
 
 export class FindTransitionsDto {
