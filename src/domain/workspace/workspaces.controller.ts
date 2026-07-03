@@ -9,8 +9,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { WorkspaceService } from './workspaces.service';
-import { CreateWorkspaceDto } from './dto';
+import { CreateWorkspaceDto, InviteUsersDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceMemberGuard } from 'src/common/guards/workspace-member.guard';
 import type { AuthRequest } from '../auth/jwt-auth.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 
@@ -35,18 +36,27 @@ export class WorkspaceController {
   }
 
   @Post('/invite')
-  async inviteUser(
-    @WorkspaceId() workspaceId: string,
-    @Body() dto: { emails: string[] },
-  ) {
-    return await this.workspaceService.inviteUser({ workspaceId, ...dto });
+  async inviteUser(@Req() req: AuthRequest, @Body() dto: InviteUsersDto) {
+    return await this.workspaceService.inviteUser(req.user.id, dto);
   }
 
-  @Delete('/users/:userId')
-  async detachUser(
-    @WorkspaceId() workspaceId: string,
+  @Get(':id/members')
+  @UseGuards(WorkspaceMemberGuard)
+  async getMembers(@Param('id') workspaceId: string) {
+    return await this.workspaceService.getMembers(workspaceId);
+  }
+
+  @Delete(':id/members/:userId')
+  @UseGuards(WorkspaceMemberGuard)
+  async removeMember(
+    @Req() req: AuthRequest,
+    @Param('id') workspaceId: string,
     @Param('userId') userId: string,
   ) {
-    return await this.workspaceService.detachUser({ workspaceId, userId });
+    return await this.workspaceService.removeMember(
+      req.user.id,
+      workspaceId,
+      userId,
+    );
   }
 }

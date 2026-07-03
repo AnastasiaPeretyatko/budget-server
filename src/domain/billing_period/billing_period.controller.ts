@@ -10,10 +10,11 @@ import {
 } from '@nestjs/common';
 import { BillingPeriodService } from './billing_period.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceMemberGuard } from 'src/common/guards/workspace-member.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 import type { CreateBillingPeriodDto, UpdateBillingPeriodDto } from './types';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceMemberGuard)
 @Controller('billing-period')
 export class BillingPeriodController {
   constructor(private readonly billingPeriodService: BillingPeriodService) {}
