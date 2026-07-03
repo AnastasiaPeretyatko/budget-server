@@ -8,6 +8,8 @@ import { WorkspaceEntity } from '../workspace/workspaces.entity';
 import { WorkspaceModule } from '../workspace/workspaces.module';
 import { AuthModule } from '../auth/auth.module';
 import { BillingPeriodModule } from '../billing_period/billing_period.module';
+import { TagsModule } from '../tags/tags.module';
+import { TagEntity } from '../tags/tag.entity';
 
 @Module({
   imports: [
@@ -15,10 +17,12 @@ import { BillingPeriodModule } from '../billing_period/billing_period.module';
       TransitionEntity,
       SavingAccountEntity,
       WorkspaceEntity,
+      TagEntity,
     ]),
     WorkspaceModule,
     AuthModule,
     BillingPeriodModule,
+    TagsModule,
   ],
   controllers: [TransitionController],
   providers: [TransitionService],

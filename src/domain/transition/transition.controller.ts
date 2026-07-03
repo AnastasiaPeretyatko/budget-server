@@ -41,6 +41,15 @@ export class TransitionController {
     return this.transitionService.findAllTransition(dto, workspaceId);
   }
 
+  @Patch(':id')
+  async updateTransition(
+    @WorkspaceId() workspaceId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateTransitionDto,
+  ) {
+    return this.transitionService.update(id, dto, workspaceId);
+  }
+
   @Get(':id')
   async getOneTransition(@Param('id') id: string) {
     return this.transitionService.findOneBy({ id });

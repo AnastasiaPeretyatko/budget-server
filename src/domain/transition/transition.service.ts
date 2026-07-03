@@ -18,6 +18,7 @@ import { ApiException } from 'src/common/exceptions/api.exceptions';
 import { SavingAccountEntity } from '../savings_account/savings_account.entity';
 import { WorkspaceService } from '../workspace/workspaces.service';
 import { BillingPeriodService } from '../billing_period/billing_period.service';
+import { TagsService } from '../tags/tags.service';
 
 @Injectable()
 export class TransitionService {
@@ -26,6 +27,7 @@ export class TransitionService {
     private readonly transitionRepository: Repository<TransitionEntity>,
     private readonly workspaceService: WorkspaceService,
     private readonly billingPeriodService: BillingPeriodService,
+    private readonly tagsService: TagsService,
     private readonly datasource: DataSource,
     @InjectPinoLogger(TransitionService.name)
     private readonly logger: PinoLogger,
@@ -40,6 +42,10 @@ export class TransitionService {
 
     if (!isExistWorkspace)
       throw ApiException.badRequest('This workspace does not exist');
+
+    const tags = tagIds?.length
+      ? await this.tagsService.findByIds(tagIds, workspaceId)
+      : [];
 
     const tr = await this.datasource.transaction(async (manager) => {
       await this.applyBalanceEffect(
@@ -75,6 +81,7 @@ export class TransitionService {
       .leftJoinAndSelect('transition.category', 'category')
       .leftJoinAndSelect('transition.createdBy', 'createdBy')
       .leftJoinAndSelect('transition.workspace', 'workspace')
+      .leftJoinAndSelect('transition.tags', 'tags')
       .where('transition.workspaceId = :workspaceId', { workspaceId })
       .orderBy('transition.date', 'DESC')
       .take(limit)
@@ -165,6 +172,7 @@ export class TransitionService {
       .leftJoinAndSelect('transition.toAccount', 'toAccount')
       .leftJoinAndSelect('transition.category', 'category')
       .leftJoinAndSelect('transition.createdBy', 'createdBy')
+      .leftJoinAndSelect('transition.tags', 'tags')
       .where(`transition.${key} = :value`, { value })
       .getOne();
   }

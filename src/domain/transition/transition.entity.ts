@@ -1,9 +1,17 @@
 import { BaseEntity } from 'src/common';
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+} from 'typeorm';
 import { CategoriesEntity } from '../categories/categories.entity';
 import { SavingAccountEntity } from '../savings_account/savings_account.entity';
 import { UserEntity } from '../user/user.entity';
 import { WorkspaceEntity } from '../workspace/workspaces.entity';
+import { TagEntity } from '../tags/tag.entity';
 
 export enum TransactionType {
   EXPENSE = 'expense',
@@ -75,4 +83,12 @@ export class TransitionEntity extends BaseEntity {
   @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'created_by_id' })
   createdBy!: UserEntity | null;
+
+  @ManyToMany(() => TagEntity, (tag) => tag.transitions, { eager: false })
+  @JoinTable({
+    name: 'transaction_tags',
+    joinColumn: { name: 'transaction_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'tag_id', referencedColumnName: 'id' },
+  })
+  tags!: TagEntity[];
 }
