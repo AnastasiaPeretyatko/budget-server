@@ -11,7 +11,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { TransitionService } from './transition.service';
-import { CreateTransitionDto, FindTransitionsDto, UpdateTransitionDto } from './dto';
+import {
+  CreateTransitionDto,
+  FindTransitionsDto,
+  UpdateTransitionDto,
+} from './dto';
 import { JwtAuthGuard, type AuthRequest } from '../auth/jwt-auth.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
 

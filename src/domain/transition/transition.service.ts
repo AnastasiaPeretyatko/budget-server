@@ -209,7 +209,7 @@ export class TransitionService {
     return await this.findOneBy({ id });
   }
 
-  public async remove(id: string): Promise<void> {
+  public async remove(id: string) {
     const transition = await this.findOneBy({ id });
 
     if (!transition)
@@ -227,6 +227,10 @@ export class TransitionService {
 
       await manager.getRepository(TransitionEntity).softDelete(id);
     });
+
+    return {
+      message: 'Транзакция успешно удалена',
+    };
   }
 
   /**
