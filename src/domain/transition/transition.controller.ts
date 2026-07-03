@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -52,5 +54,19 @@ export class TransitionController {
   @Get(':id')
   async getOneTransition(@Param('id') id: string) {
     return this.transitionService.findOneBy({ id });
+  }
+
+  @Patch(':id')
+  async updateTransition(
+    @Param('id') id: string,
+    @Body() dto: UpdateTransitionDto,
+  ) {
+    return this.transitionService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  async deleteTransition(@Param('id') id: string) {
+    return this.transitionService.remove(id);
   }
 }

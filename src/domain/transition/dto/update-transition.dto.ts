@@ -31,7 +31,12 @@ export class UpdateTransitionDto {
 
   @IsString()
   @IsOptional()
-  description?: null;
+  description?: string | null;
+
+  @IsDate()
+  @Type(() => Date)
+  @IsOptional()
+  date?: Date;
 
   @IsEnum(TransactionType)
   @IsOptional()

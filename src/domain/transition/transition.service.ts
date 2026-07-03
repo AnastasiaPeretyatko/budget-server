@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { InjectRepository } from '@nestjs/typeorm';
-import { TransitionEntity } from './transition.entity';
-import { Brackets, DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { TransitionEntity, TransactionType } from './transition.entity';
+import {
+  Brackets,
+  DataSource,
+  EntityManager,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import {
   CreateTransitionDto,
   FindTransitionsDto,
@@ -32,8 +38,6 @@ export class TransitionService {
     workspaceId: string,
     userId: string,
   ): Promise<TransitionEntity | null> {
-    const { fromAccountId, toAccountId, tagIds, ...rest } = dto;
-
     const isExistWorkspace = await this.workspaceService.findById(workspaceId);
 
     if (!isExistWorkspace)
@@ -44,34 +48,18 @@ export class TransitionService {
       : [];
 
     const tr = await this.datasource.transaction(async (manager) => {
-      const repo = manager.getRepository(SavingAccountEntity);
+      await this.applyBalanceEffect(
+        manager,
+        dto.type ?? TransactionType.EXPENSE,
+        dto.fromAccountId,
+        dto.toAccountId,
+        dto.amount,
+        'apply',
+      );
 
-      if (fromAccountId) {
-        const fromAccount = await repo.findOneByOrFail({ id: fromAccountId });
-
-        if (Number(fromAccount.amount) < Number(dto.amount)) {
-          throw ApiException.badRequest('Not enough funds');
-        }
-
-        await repo.update(fromAccountId, {
-          amount: () => `amount - ${dto.amount}`,
-        });
-      }
-
-      if (toAccountId) {
-        await repo.update(toAccountId, {
-          amount: () => `amount + ${dto.amount}`,
-        });
-      }
-
-      return await manager.getRepository(TransitionEntity).save({
-        ...rest,
-        fromAccountId,
-        toAccountId,
-        workspaceId,
-        createdById: userId,
-        tags,
-      });
+      return await manager
+        .getRepository(TransitionEntity)
+        .save({ ...dto, workspaceId, createdById: userId });
     });
 
     return await this.findOneBy({ id: tr.id });
@@ -192,36 +180,115 @@ export class TransitionService {
   public async update(
     id: string,
     dto: UpdateTransitionDto,
-    workspaceId: string,
-  ) {
+  ): Promise<TransitionEntity | null> {
+    const old = await this.findOneBy({ id });
+
+    if (!old) throw ApiException.badRequest('There is no such transaction!');
+
+    await this.datasource.transaction(async (manager) => {
+      await this.applyBalanceEffect(
+        manager,
+        old.type,
+        old.fromAccountId,
+        old.toAccountId,
+        old.amount,
+        'reverse',
+      );
+
+      const newType = dto.type ?? old.type;
+      const newFromAccountId =
+        dto.fromAccountId !== undefined ? dto.fromAccountId : old.fromAccountId;
+      const newToAccountId =
+        dto.toAccountId !== undefined ? dto.toAccountId : old.toAccountId;
+      const newAmount = dto.amount ?? old.amount;
+
+      await this.applyBalanceEffect(
+        manager,
+        newType,
+        newFromAccountId,
+        newToAccountId,
+        newAmount,
+        'apply',
+      );
+
+      await manager.getRepository(TransitionEntity).update(id, { ...dto });
+    });
+
+    return await this.findOneBy({ id });
+  }
+
+  public async remove(id: string) {
     const transition = await this.findOneBy({ id });
 
     if (!transition)
       throw ApiException.badRequest('There is no such transaction!');
 
-    const { tagIds, ...rest } = dto;
+    await this.datasource.transaction(async (manager) => {
+      await this.applyBalanceEffect(
+        manager,
+        transition.type,
+        transition.fromAccountId,
+        transition.toAccountId,
+        transition.amount,
+        'reverse',
+      );
 
-    if (Object.keys(rest).length) {
-      await this.transitionRepository
-        .createQueryBuilder()
-        .update()
-        .where('id = :id', { id })
-        .set(rest)
-        .execute();
+      await manager.getRepository(TransitionEntity).softDelete(id);
+    });
+
+    return {
+      message: 'Транзакция успешно удалена',
+    };
+  }
+
+  /**
+   * Applies or reverses the balance effect of a transaction on the involved accounts.
+   * direction='apply'   → deduct from source, credit to destination
+   * direction='reverse' → credit back to source, deduct from destination
+   */
+  private async applyBalanceEffect(
+    manager: EntityManager,
+    type: TransactionType,
+    fromAccountId: string | null | undefined,
+    toAccountId: string | null | undefined,
+    amount: string,
+    direction: 'apply' | 'reverse',
+  ): Promise<void> {
+    const repo = manager.getRepository(SavingAccountEntity);
+    const isApply = direction === 'apply';
+
+    if (
+      (type === TransactionType.EXPENSE || type === TransactionType.TRANSFER) &&
+      fromAccountId
+    ) {
+      if (isApply) {
+        const account = await repo.findOneByOrFail({ id: fromAccountId });
+        if (Number(account.amount) < Number(amount)) {
+          throw ApiException.badRequest('Not enough funds');
+        }
+        await repo.update(fromAccountId, {
+          amount: () => `amount - ${amount}`,
+        });
+      } else {
+        await repo.update(fromAccountId, {
+          amount: () => `amount + ${amount}`,
+        });
+      }
     }
 
-    if (tagIds !== undefined) {
-      const tags = tagIds.length
-        ? await this.tagsService.findByIds(tagIds, workspaceId)
-        : [];
-
-      await this.transitionRepository
-        .createQueryBuilder()
-        .relation(TransitionEntity, 'tags')
-        .of(id)
-        .addAndRemove(tags, transition.tags ?? []);
+    if (
+      (type === TransactionType.INCOME || type === TransactionType.TRANSFER) &&
+      toAccountId
+    ) {
+      if (isApply) {
+        await repo.update(toAccountId, {
+          amount: () => `amount + ${amount}`,
+        });
+      } else {
+        await repo.update(toAccountId, {
+          amount: () => `amount - ${amount}`,
+        });
+      }
     }
-
-    return await this.findOneBy({ id });
   }
 }
