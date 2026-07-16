@@ -37,13 +37,13 @@ export class SavingAccountService {
     { name, description, amount }: CreateSavingAccountDto,
     workspaceId: string,
     userId?: string,
-  ): Promise<SavingAccountEntity> {
+  ) {
     const account = await this.findByOne({ name, workspaceId });
     if (account) throw ApiException.badRequest('Error');
 
     const sanitizedAmount = this.sanitizeAmount(amount);
 
-    return this.datasource.transaction(async (manager) => {
+    const savedAccount = await this.datasource.transaction(async (manager) => {
       const savedAccount = await manager
         .getRepository(SavingAccountEntity)
         .save({
@@ -73,6 +73,8 @@ export class SavingAccountService {
 
       return savedAccount;
     });
+
+    return this.getOne(savedAccount.id, workspaceId);
   }
 
   async update(
