@@ -49,3 +49,33 @@ export class CreateTransitionDto {
   @IsOptional()
   tagIds?: string[];
 }
+
+export class CreateBatchTransaction {
+  @IsString()
+  @IsOptional()
+  accountName?: string;
+
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
+
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.replace(',', '.') : value,
+  )
+  @Matches(/^\d+(\.\d{1,2})?$/, { message: 'amount must be a valid number' })
+  @IsDefined()
+  amount!: string;
+
+  @IsString()
+  @IsOptional()
+  description?: null;
+
+  @IsDate()
+  @Type(() => Date)
+  @IsDefined()
+  date!: Date;
+
+  @IsEnum(TransactionType)
+  @IsOptional()
+  type?: TransactionType;
+}

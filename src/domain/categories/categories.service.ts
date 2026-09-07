@@ -7,7 +7,7 @@ import { ApiException } from 'src/common/exceptions/api.exceptions';
 export class CategoriesService {
   constructor(private readonly datasource: DataSource) {}
 
-  async findByOne(dto: Partial<CategoriesEntity>) {
+  async findByOne(dto: Omit<Partial<CategoriesEntity>, 'transactions'>) {
     return await this.datasource.getRepository(CategoriesEntity).findOneBy(dto);
   }
 

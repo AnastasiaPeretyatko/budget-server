@@ -280,13 +280,23 @@ export class StatisticsService {
     return qb.getMany();
   }
 
+  private formatDate(date: BillingPeriodEntity | null): DateRange {
+    console.log({ date });
+    return {
+      from: date?.startDate ?? '',
+      to: date?.endDate ?? '',
+    };
+  }
+
+  //TODO Отредактировать сейчас не считает баланс от начала периода
   async getDashboardSummary(workspaceId: string): Promise<DashboardSummary> {
     const period = await this.billingPeriodService.getLatestActive(workspaceId);
-    const ranges = this.getPeriodRanges(period);
+    const prevPeriod =
+      await this.billingPeriodService.getPrevActive(workspaceId);
 
     const [current, previous, totalBalance] = await Promise.all([
-      this.queryTotals(workspaceId, ranges.current),
-      this.queryTotals(workspaceId, ranges.previous),
+      this.queryTotals(workspaceId, this.formatDate(period)),
+      this.queryTotals(workspaceId, this.formatDate(prevPeriod)),
       this.queryTotalAccountsBalance(workspaceId),
     ]);
 

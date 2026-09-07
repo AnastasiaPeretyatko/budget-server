@@ -6,10 +6,12 @@ import {
   Brackets,
   DataSource,
   EntityManager,
+  In,
   Repository,
   SelectQueryBuilder,
 } from 'typeorm';
 import {
+  CreateBatchTransaction,
   CreateTransitionDto,
   FindTransitionsDto,
   UpdateTransitionDto,
@@ -67,6 +69,59 @@ export class TransitionService {
     return await this.findOneBy({ id: tr.id });
   }
 
+  public async createMany(
+    dtos: CreateBatchTransaction[],
+    workspaceId: string,
+    userId: string,
+  ): Promise<TransitionEntity[] | null> {
+    const isExistWorkspace = await this.workspaceService.findById(workspaceId);
+    if (!isExistWorkspace)
+      throw ApiException.badRequest('This workspace does not exist');
+
+    const createdIds: string[] = [];
+
+    const accountNames = [...new Set(dtos.map((d) => d.accountName))];
+    const accounts = await this.datasource
+      .getRepository(SavingAccountEntity)
+      .createQueryBuilder('sa')
+      .where('sa.name IN (:...names)', { names: accountNames })
+      .andWhere('sa.workspaceId = :workspaceId', { workspaceId })
+      .select(['sa.id', 'sa.name'])
+      .getMany();
+
+    if (!accounts) ApiException.badRequest('Имена счетов не верные');
+
+    await this.datasource.transaction(async (manager) => {
+      for (const dto of dtos) {
+        const account = accounts.find((el) => el.name === dto.accountName);
+
+        if (!account?.id)
+          ApiException.badRequest(`Имя ${account?.name} не верное`);
+
+        await this.applyBalanceEffect(
+          manager,
+          dto.type ?? TransactionType.EXPENSE,
+          null,
+          account?.id,
+          dto.amount,
+          'apply',
+        );
+
+        const saved = await manager.getRepository(TransitionEntity).save({
+          ...dto,
+          fromAccountId: null,
+          toAccountId: account?.id,
+          workspaceId,
+          createdById: userId,
+        });
+
+        createdIds.push(saved.id);
+      }
+    });
+
+    return this.findManyByIds(createdIds);
+  }
+
   public async findAllTransition(
     { paging, filter }: FindTransitionsDto,
     workspaceId: string,
@@ -110,7 +165,8 @@ export class TransitionService {
       return;
     }
 
-    const lastPeriod = await this.billingPeriodService.getLatest(workspaceId);
+    const lastPeriod =
+      await this.billingPeriodService.getLatestActive(workspaceId);
 
     if (lastPeriod) {
       db.andWhere('transition.date BETWEEN :from AND :to', {
@@ -342,5 +398,11 @@ export class TransitionService {
         });
       }
     }
+  }
+
+  private async findManyByIds(ids: string[]) {
+    return await this.datasource.getRepository(TransitionEntity).find({
+      where: { id: In(ids) },
+    });
   }
 }

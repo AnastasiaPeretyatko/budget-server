@@ -2,14 +2,19 @@ import type { Options as PinoHttpOptions } from 'pino-http';
 import { join } from 'node:path';
 
 const isDev = process.env.NODE_ENV !== 'production';
+const isTest = process.env.NODE_ENV === 'test';
 
 export const pinoHttpConfig: PinoHttpOptions = {
-  level: isDev ? 'debug' : 'info',
+  level: isTest ? 'silent' : isDev ? 'debug' : 'info',
 
-  transport: {
-    target: join(__dirname, 'pino-transport'),
-    options: { colorize: isDev },
-  },
+  // The pretty transport runs in a worker thread which conflicts with Jest's
+  // teardown ("the worker has exited"), so it is disabled during tests.
+  transport: isTest
+    ? undefined
+    : {
+        target: join(__dirname, 'pino-transport'),
+        options: { colorize: isDev },
+      },
 
   autoLogging: {
     ignore: (req) => req.url === '/health',

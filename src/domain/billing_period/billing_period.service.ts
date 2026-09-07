@@ -19,6 +19,12 @@ export class BillingPeriodService {
     dto: CreateBillingPeriodDto,
     workspaceId: string,
   ): Promise<BillingPeriodEntity> {
+    const lastPeriod = await this.getLatestActive(workspaceId);
+    if (lastPeriod) {
+      lastPeriod.status = BillingPeriodStatus.COMPLETED;
+      await this.billingPeriodRepository.save(lastPeriod);
+    }
+
     return this.billingPeriodRepository.save({
       startDate: dto.startDate,
       endDate: dto.endDate,
@@ -64,13 +70,6 @@ export class BillingPeriodService {
     return period;
   }
 
-  async getLatest(workspaceId: string): Promise<BillingPeriodEntity | null> {
-    return this.billingPeriodRepository.findOne({
-      where: { workspaceId, status: BillingPeriodStatus.ACTIVE },
-      order: { startDate: 'DESC' },
-    });
-  }
-
   async getLatestActive(
     workspaceId: string,
   ): Promise<BillingPeriodEntity | null> {
@@ -78,6 +77,17 @@ export class BillingPeriodService {
       where: { workspaceId, status: BillingPeriodStatus.ACTIVE },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async getPrevActive(
+    workspaceId: string,
+  ): Promise<BillingPeriodEntity | null> {
+    const period = await this.billingPeriodRepository.find({
+      where: { workspaceId, status: BillingPeriodStatus.COMPLETED },
+      order: { startDate: 'DESC' },
+      take: 1,
+    });
+    return period[0] || null;
   }
 
   async getAll(workspaceId: string) {

@@ -44,7 +44,10 @@ export class TransitionEntity extends BaseEntity {
   @Column({ name: 'categories_id', type: 'uuid', nullable: true })
   categoryId?: string | null;
 
-  @ManyToOne(() => CategoriesEntity, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => CategoriesEntity, (category) => category.transactions, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'categories_id' })
   category?: CategoriesEntity | null;
 

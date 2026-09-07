@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { TransitionService } from './transition.service';
 import {
+  CreateBatchTransaction,
   CreateTransitionDto,
   FindTransitionsDto,
   UpdateTransitionDto,
@@ -40,6 +41,15 @@ export class TransitionController {
     @Body() dto: FindTransitionsDto,
   ) {
     return this.transitionService.findAllTransition(dto, workspaceId);
+  }
+
+  @Post('/batch')
+  async createBatchTransition(
+    @WorkspaceId() workspaceId: string,
+    @Body() dto: CreateBatchTransaction[],
+    @Req() req: AuthRequest,
+  ) {
+    return this.transitionService.createMany(dto, workspaceId, req.user.id);
   }
 
   @Patch(':id')
