@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { Logger } from 'nestjs-pino';
 import { ValidationPipe } from '@nestjs/common';
 import * as qs from 'qs';
+import { QueryFailedFilter } from './common/filters/query-failed.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
@@ -14,6 +15,8 @@ async function bootstrap() {
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   expressApp.set('query parser', (str: string) => qs.parse(str));
+
+  app.useGlobalFilters(new QueryFailedFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({

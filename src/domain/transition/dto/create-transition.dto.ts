@@ -14,6 +14,7 @@ import { TransactionType } from '../transition.entity';
 export class CreateTransitionDto {
   @IsString()
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
   fromAccountId: string | null = null;
 
   @IsString()
@@ -23,6 +24,7 @@ export class CreateTransitionDto {
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
   categoryId: string | null = null;
 
   @Transform(({ value }: { value: unknown }) =>

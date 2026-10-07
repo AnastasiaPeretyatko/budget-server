@@ -14,15 +14,18 @@ import { TransactionType } from '../transition.entity';
 export class UpdateTransitionDto {
   @IsString()
   @IsOptional()
-  fromAccountId?: string;
+  @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
+  fromAccountId?: string | null;
 
   @IsString()
   @IsOptional()
-  toAccountId?: string;
+  @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
+  toAccountId?: string | null;
 
   @IsString()
   @IsOptional()
-  categoryId?: string;
+  @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
+  categoryId?: string | null;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.replace(',', '.') : value,
