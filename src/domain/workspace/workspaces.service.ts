@@ -85,8 +85,12 @@ export class WorkspaceService {
     }));
   }
 
-  async inviteUser(currentUserId: string, dto: InviteUsersDto) {
-    const { workspaceId, emails } = dto;
+  async inviteUser(
+    currentUserId: string,
+    workspaceId: string,
+    dto: InviteUsersDto,
+  ) {
+    const { emails } = dto;
 
     await this.ensureIsMember(currentUserId, workspaceId);
 

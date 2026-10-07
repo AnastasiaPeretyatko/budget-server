@@ -36,8 +36,16 @@ export class WorkspaceController {
   }
 
   @Post('/invite')
-  async inviteUser(@Req() req: AuthRequest, @Body() dto: InviteUsersDto) {
-    return await this.workspaceService.inviteUser(req.user.id, dto);
+  async inviteUser(
+    @Req() req: AuthRequest,
+    @WorkspaceId() workspaceId: string,
+    @Body() dto: InviteUsersDto,
+  ) {
+    return await this.workspaceService.inviteUser(
+      req.user.id,
+      workspaceId,
+      dto,
+    );
   }
 
   @Get(':id/members')
