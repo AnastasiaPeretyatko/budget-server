@@ -34,7 +34,7 @@ export class SavingAccountService {
   }
 
   async create(
-    { name, description, amount }: CreateSavingAccountDto,
+    { name, description, amount, isSafe }: CreateSavingAccountDto,
     workspaceId: string,
     userId?: string,
   ) {
@@ -50,6 +50,7 @@ export class SavingAccountService {
           name,
           description,
           amount: '0',
+          isSafe: isSafe ?? false,
           workspaceId,
         });
 
@@ -78,7 +79,7 @@ export class SavingAccountService {
   }
 
   async update(
-    { id, name, description, amount }: UpdateSavingAccountDto,
+    { id, name, description, amount, isSafe }: UpdateSavingAccountDto,
     workspaceId: string,
   ) {
     const account = await this.findByOne({ id, workspaceId });
@@ -98,6 +99,7 @@ export class SavingAccountService {
       name,
       description,
       amount: amount !== undefined ? this.sanitizeAmount(amount) : undefined,
+      isSafe,
     });
 
     return await this.findByOne({ id });

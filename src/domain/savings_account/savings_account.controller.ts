@@ -14,7 +14,7 @@ import { SavingAccountService } from './savings_account.service';
 import { JwtAuthGuard, type AuthRequest } from '../auth/jwt-auth.guard';
 import { WorkspaceMemberGuard } from 'src/common/guards/workspace-member.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
-import type { CreateSavingAccountDto } from './types';
+import type { CreateSavingAccountDto, UpdateSavingAccountDto } from './types';
 
 @UseGuards(JwtAuthGuard, WorkspaceMemberGuard)
 @Controller('saving')
@@ -38,7 +38,7 @@ export class SavingAccountController {
   async update(
     @WorkspaceId() workspaceId: string,
     @Param('id') id: string,
-    @Body() dto: CreateSavingAccountDto,
+    @Body() dto: Omit<UpdateSavingAccountDto, 'id'>,
   ) {
     return await this.savingAccountService.update({ id, ...dto }, workspaceId);
   }

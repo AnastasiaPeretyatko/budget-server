@@ -2,6 +2,7 @@ export interface CreateSavingAccountDto {
   name: string;
   description?: string;
   amount: string;
+  isSafe?: boolean;
 }
 
 export interface UpdateSavingAccountDto {
@@ -9,6 +10,7 @@ export interface UpdateSavingAccountDto {
   name?: string;
   description?: string;
   amount?: string;
+  isSafe?: boolean;
 }
 
 export interface SavingAccountRaw {

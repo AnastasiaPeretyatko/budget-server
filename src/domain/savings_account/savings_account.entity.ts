@@ -19,6 +19,10 @@ export class SavingAccountEntity extends BaseEntity {
   })
   amount!: string;
 
+  // Резервный сейф: переводы на него видны на странице «План»
+  @Column({ name: 'is_safe', type: 'boolean', default: false })
+  isSafe!: boolean;
+
   @Column({ name: 'workspace_id', type: 'uuid', nullable: false })
   workspaceId!: string;
 
