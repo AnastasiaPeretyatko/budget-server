@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   UseGuards,
@@ -12,12 +13,16 @@ import { BillingPeriodService } from './billing_period.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceMemberGuard } from 'src/common/guards/workspace-member.guard';
 import { WorkspaceId } from 'src/common/decorators/workspace-id.decorator';
-import type { CreateBillingPeriodDto, UpdateBillingPeriodDto } from './types';
+import { BillingPeriodSummaryService } from './billing_period_summary.service';
+import { CreateBillingPeriodDto, UpdateBillingPeriodDto } from './dto';
 
 @UseGuards(JwtAuthGuard, WorkspaceMemberGuard)
 @Controller('billing-period')
 export class BillingPeriodController {
-  constructor(private readonly billingPeriodService: BillingPeriodService) {}
+  constructor(
+    private readonly billingPeriodService: BillingPeriodService,
+    private readonly summaryService: BillingPeriodSummaryService,
+  ) {}
 
   @Post()
   async create(
@@ -31,7 +36,7 @@ export class BillingPeriodController {
   async update(
     @WorkspaceId() workspaceId: string,
     @Param('id') id: string,
-    @Body() dto: Omit<UpdateBillingPeriodDto, 'id'>,
+    @Body() dto: UpdateBillingPeriodDto,
   ) {
     return this.billingPeriodService.update({ id, ...dto }, workspaceId);
   }
@@ -51,6 +56,20 @@ export class BillingPeriodController {
   async getLastActivePeriod(@WorkspaceId() workspaceId: string) {
     const period = await this.billingPeriodService.getLatestActive(workspaceId);
     return { data: period };
+  }
+
+  // history и :id/summary объявлены раньше :id, чтобы не пересекаться с ним
+  @Get('history')
+  async getHistory(@WorkspaceId() workspaceId: string) {
+    return this.summaryService.getHistory(workspaceId);
+  }
+
+  @Get(':id/summary')
+  async getSummary(
+    @WorkspaceId() workspaceId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.summaryService.getSummary(id, workspaceId);
   }
 
   @Get(':id')

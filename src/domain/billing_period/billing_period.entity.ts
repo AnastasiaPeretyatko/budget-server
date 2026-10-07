@@ -1,6 +1,7 @@
 import { BaseEntity } from 'src/common';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { WorkspaceEntity } from '../workspace/workspaces.entity';
+import { PlanSnapshotItem } from './types';
 
 export enum BillingPeriodStatus {
   ACTIVE = 'active',
@@ -31,4 +32,36 @@ export class BillingPeriodEntity extends BaseEntity {
 
   @Column({ name: 'start_day', type: 'smallint', nullable: true })
   startDay!: number | null;
+
+  // Три колонки ниже заполняются при закрытии цикла. В обычные выборки
+  // (select: false) они не попадают — форма ответов GET не меняется,
+  // нужные места читают их явно.
+
+  // План расходов цикла: сумма лимитов категорий на момент закрытия
+  @Column({
+    name: 'planned_amount',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    select: false,
+  })
+  plannedAmount!: string | null;
+
+  // Категории с лимитом > 0 на момент закрытия
+  @Column({
+    name: 'plan_snapshot',
+    type: 'jsonb',
+    nullable: true,
+    select: false,
+  })
+  planSnapshot!: PlanSnapshotItem[] | null;
+
+  @Column({
+    name: 'closed_at',
+    type: 'timestamptz',
+    nullable: true,
+    select: false,
+  })
+  closedAt!: Date | null;
 }
