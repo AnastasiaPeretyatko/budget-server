@@ -16,9 +16,14 @@ import { StatisticsModule } from './domain/statistics/statistics.module';
 import { TagsModule } from './domain/tags/tags.module';
 import { HealthController } from './domain/health';
 import { TemplateModule } from './domain/templates/template.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { HttpModule } from '@nestjs/axios';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
+    HttpModule,
     LoggerModule.forRoot({ pinoHttp: pinoHttpConfig }),
     SvcConfigModule,
     TypeOrmModule.forRootAsync({
@@ -39,7 +44,7 @@ import { TemplateModule } from './domain/templates/template.module';
     TagsModule,
     TemplateModule,
   ],
-  providers: [],
+  providers: [AppService],
   controllers: [HealthController],
 })
 export class AppModule {}
