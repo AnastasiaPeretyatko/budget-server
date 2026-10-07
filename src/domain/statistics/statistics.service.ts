@@ -14,6 +14,10 @@ import {
 } from './dto';
 import { BillingPeriodService } from '../billing_period/billing_period.service';
 import { BillingPeriodEntity } from '../billing_period/billing_period.entity';
+import {
+  calculateCycleBounds,
+  formatLocalDate,
+} from '../billing_period/utils/cycle-bounds';
 
 interface CategoryRow {
   categoryId: string | null;
@@ -280,12 +284,28 @@ export class StatisticsService {
     return qb.getMany();
   }
 
-  private formatDate(date: BillingPeriodEntity | null): DateRange {
-    console.log({ date });
+  // Даты текущего периода. Если конец не задан (период по числу месяца
+  // или только с датой начала) — считаем до сегодняшнего дня.
+  private getCurrentRange(
+    period: BillingPeriodEntity | null,
+  ): DateRange | null {
+    const today = new Date();
+    const bounds = period ? calculateCycleBounds(period, today) : null;
+    if (!bounds) return null;
+
     return {
-      from: date?.startDate ?? '',
-      to: date?.endDate ?? '',
+      from: bounds.startDate,
+      to: bounds.endDate ?? formatLocalDate(today),
     };
+  }
+
+  // Прошлый период закрыт, даты в нём уже заполнены. Если их нет — null
+  private getPreviousRange(
+    period: BillingPeriodEntity | null,
+  ): DateRange | null {
+    if (!period?.startDate || !period.endDate) return null;
+
+    return { from: period.startDate, to: period.endDate };
   }
 
   //TODO Отредактировать сейчас не считает баланс от начала периода
@@ -295,8 +315,8 @@ export class StatisticsService {
       await this.billingPeriodService.getPrevActive(workspaceId);
 
     const [current, previous, totalBalance] = await Promise.all([
-      this.queryTotals(workspaceId, this.formatDate(period)),
-      this.queryTotals(workspaceId, this.formatDate(prevPeriod)),
+      this.queryTotals(workspaceId, this.getCurrentRange(period)),
+      this.queryTotals(workspaceId, this.getPreviousRange(prevPeriod)),
       this.queryTotalAccountsBalance(workspaceId),
     ]);
 
@@ -394,8 +414,11 @@ export class StatisticsService {
 
   private async queryTotals(
     workspaceId: string,
-    range: DateRange,
+    range: DateRange | null,
   ): Promise<{ income: number; expenses: number }> {
+    // Нет периода — нет и дат для запроса, показываем нули
+    if (!range) return { income: 0, expenses: 0 };
+
     const result = await this.transitionRepository
       .createQueryBuilder('t')
       .select(
