@@ -60,12 +60,16 @@ class FilterDto {
   toAccountId?: string;
 
   @IsOptional()
-  @IsString()
-  categoryId?: string;
+  @IsArray()
+  categoryIds?: string[];
 
   @IsOptional()
   @Type(() => FilterDateDto)
   date?: FilterDateDto;
+
+  @IsOptional()
+  @IsString()
+  periodId?: string;
 
   @IsOptional()
   @IsEnum(TransactionType)

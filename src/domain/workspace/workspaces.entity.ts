@@ -2,6 +2,7 @@ import { BaseEntity } from 'src/common';
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { UserEntity } from '../user/user.entity';
 import { WorkspaceUserEntity } from './workspace_user.entity';
+import { TemplateEntity } from '../templates/template.entity';
 
 @Entity({ name: 'workspaces' })
 export class WorkspaceEntity extends BaseEntity {
@@ -17,4 +18,7 @@ export class WorkspaceEntity extends BaseEntity {
 
   @OneToMany(() => WorkspaceUserEntity, (uw) => uw.workspace)
   userWorkspaces!: WorkspaceUserEntity[];
+
+  @OneToMany(() => TemplateEntity, (t) => t.workspace)
+  templates!: TemplateEntity[];
 }

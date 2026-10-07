@@ -14,15 +14,16 @@ import { TransactionType } from '../transition.entity';
 export class CreateTransitionDto {
   @IsString()
   @IsOptional()
-  fromAccountId?: string;
+  fromAccountId: string | null = null;
 
   @IsString()
   @IsOptional()
-  toAccountId?: string;
+  @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
+  toAccountId: string | null = null;
 
   @IsString()
-  @IsDefined()
-  categoryId!: string;
+  @IsOptional()
+  categoryId: string | null = null;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.replace(',', '.') : value,
@@ -33,7 +34,7 @@ export class CreateTransitionDto {
 
   @IsString()
   @IsOptional()
-  description?: null;
+  description: string | null = null;
 
   @IsDate()
   @Type(() => Date)
@@ -41,13 +42,13 @@ export class CreateTransitionDto {
   date!: Date;
 
   @IsEnum(TransactionType)
-  @IsOptional()
-  type?: TransactionType;
+  @IsDefined()
+  type!: TransactionType;
 
   @IsArray()
   @IsUUID('4', { each: true })
   @IsOptional()
-  tagIds?: string[];
+  tagIds: string[] | null = null;
 }
 
 export class CreateBatchTransaction {

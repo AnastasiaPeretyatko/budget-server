@@ -49,7 +49,25 @@ export class TransitionController {
     @Body() dto: CreateBatchTransaction[],
     @Req() req: AuthRequest,
   ) {
-    return this.transitionService.createMany(dto, workspaceId, req.user.id);
+    return await this.transitionService.createMany(
+      dto,
+      workspaceId,
+      req.user.id,
+    );
+  }
+
+  @Post('/from-template')
+  async createFromtemplate(
+    @Req() req: AuthRequest,
+    @WorkspaceId() workspaceId: string,
+    @Body()
+    data: { templateId: string; overrides: Partial<CreateTransitionDto> },
+  ) {
+    return await this.transitionService.createFormTemplate({
+      data,
+      userId: req.user.id,
+      workspaceId,
+    });
   }
 
   @Patch(':id')

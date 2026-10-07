@@ -15,6 +15,7 @@ import { BillingPeriodModule } from './domain/billing_period/billing_period.modu
 import { StatisticsModule } from './domain/statistics/statistics.module';
 import { TagsModule } from './domain/tags/tags.module';
 import { HealthController } from './domain/health';
+import { TemplateModule } from './domain/templates/template.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { HealthController } from './domain/health';
     BillingPeriodModule,
     StatisticsModule,
     TagsModule,
+    TemplateModule,
   ],
   providers: [],
   controllers: [HealthController],

@@ -10,6 +10,7 @@ import { AuthModule } from '../auth/auth.module';
 import { BillingPeriodModule } from '../billing_period/billing_period.module';
 import { TagsModule } from '../tags/tags.module';
 import { TagEntity } from '../tags/tag.entity';
+import { TemplateModule } from '../templates/template.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TagEntity } from '../tags/tag.entity';
     AuthModule,
     BillingPeriodModule,
     TagsModule,
+    TemplateModule,
   ],
   controllers: [TransitionController],
   providers: [TransitionService],

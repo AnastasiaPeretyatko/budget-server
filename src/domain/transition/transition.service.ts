@@ -21,6 +21,8 @@ import { SavingAccountEntity } from '../savings_account/savings_account.entity';
 import { WorkspaceService } from '../workspace/workspaces.service';
 import { BillingPeriodService } from '../billing_period/billing_period.service';
 import { TagsService } from '../tags/tags.service';
+import { TemplateServise } from '../templates/template.service';
+import { templateToTransactionDto } from './utils/template-to-transaction-dto';
 
 @Injectable()
 export class TransitionService {
@@ -31,6 +33,7 @@ export class TransitionService {
     private readonly billingPeriodService: BillingPeriodService,
     private readonly tagsService: TagsService,
     private readonly datasource: DataSource,
+    private readonly templateService: TemplateServise,
     @InjectPinoLogger(TransitionService.name)
     private readonly logger: PinoLogger,
   ) {}
@@ -51,6 +54,8 @@ export class TransitionService {
       ? await this.tagsService.findByIds(tagIds, workspaceId)
       : [];
 
+    console.log({ dto });
+
     const tr = await this.datasource.transaction(async (manager) => {
       await this.applyBalanceEffect(
         manager,
@@ -67,6 +72,32 @@ export class TransitionService {
     });
 
     return await this.findOneBy({ id: tr.id });
+  }
+
+  public async createFormTemplate({
+    workspaceId,
+    data,
+    userId,
+  }: {
+    workspaceId: string;
+    userId: string;
+    data: { templateId: string; overrides: Partial<CreateTransitionDto> };
+  }) {
+    const template = await this.templateService.findOneByPk(
+      data.templateId,
+      workspaceId,
+    );
+
+    if (!template) throw ApiException.badRequest('Шаблон не найден');
+
+    const t = templateToTransactionDto(template, data.overrides);
+    console.log({ t });
+
+    const newTransaction = await this.create(t, workspaceId, userId);
+
+    if (!newTransaction) throw ApiException.badRequest('Что-то пошло не так');
+
+    return await this.findOneBy({ id: newTransaction?.id });
   }
 
   public async createMany(
@@ -123,7 +154,7 @@ export class TransitionService {
   }
 
   public async findAllTransition(
-    { paging, filter }: FindTransitionsDto,
+    { paging, filter, search }: FindTransitionsDto,
     workspaceId: string,
   ): Promise<{ rows: TransitionEntity[]; count: number }> {
     const limit = paging?.limit ?? 20;
@@ -144,6 +175,12 @@ export class TransitionService {
       .take(limit)
       .skip(offset);
 
+    if (search) {
+      db.andWhere('transition.description ILIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
     await this.applyDateFilter(db, filter, workspaceId);
     this.applyAccountFilter(db, filter);
     this.applyTagFilter(db, filter);
@@ -161,6 +198,22 @@ export class TransitionService {
       db.andWhere('transition.date BETWEEN :from AND :to', {
         from: filter.date.between[0],
         to: filter.date.between[1],
+      });
+      return;
+    }
+
+    if (filter?.periodId) {
+      const period = await this.billingPeriodService.getOne(
+        filter.periodId,
+        workspaceId,
+      );
+
+      if (!period)
+        throw ApiException.badRequest('Не верно указан период времени');
+
+      db.andWhere('transition.date BETWEEN :from AND :to', {
+        from: period.startDate,
+        to: period.endDate,
       });
       return;
     }
@@ -206,11 +259,7 @@ export class TransitionService {
       });
     }
 
-    if (filter?.categoryId) {
-      db.andWhere('transition.categoryId = :categoryId', {
-        categoryId: filter.categoryId,
-      });
-    }
+    this.applyCategoryFilter(db, filter);
 
     if (filter?.type) {
       db.andWhere('transition.type = :type', {
@@ -245,6 +294,19 @@ export class TransitionService {
         { tagNin: filter?.tag?.nin },
       );
     }
+  }
+
+  private applyCategoryFilter(
+    db: SelectQueryBuilder<TransitionEntity>,
+    filter: FindTransitionsDto['filter'],
+  ) {
+    if (filter?.categoryIds?.length) {
+      console.log('kek');
+      db.andWhere('transition.categoryId IN (:...categoryIds)', {
+        categoryIds: filter.categoryIds,
+      });
+    }
+    return;
   }
 
   public async findOneBy(
