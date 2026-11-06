@@ -34,12 +34,13 @@ export class SavingAccountService {
   }
 
   async create(
-    { name, description, amount, isSafe }: CreateSavingAccountDto,
+    { name, description, amount, isSafe, index }: CreateSavingAccountDto,
     workspaceId: string,
     userId?: string,
   ) {
     const account = await this.findByOne({ name, workspaceId });
-    if (account) throw ApiException.badRequest('Error');
+    if (account)
+      throw ApiException.badRequest('Конверт с таким названием существует');
 
     const sanitizedAmount = this.sanitizeAmount(amount);
 
@@ -51,6 +52,7 @@ export class SavingAccountService {
           description,
           amount: '0',
           isSafe: isSafe ?? false,
+          index,
           workspaceId,
         });
 
@@ -84,7 +86,7 @@ export class SavingAccountService {
   ) {
     const account = await this.findByOne({ id, workspaceId });
 
-    if (!account) throw ApiException.badRequest('Error');
+    if (!account) throw ApiException.badRequest('Счет не найден');
     if (name) {
       const existingAccount = await this.datasource
         .getRepository(SavingAccountEntity)
@@ -107,7 +109,7 @@ export class SavingAccountService {
 
   async delete(id: string, workspaceId: string) {
     const account = await this.findByOne({ id, workspaceId });
-    if (!account) throw ApiException.badRequest('Error');
+    if (!account) throw ApiException.badRequest('Счет не найден');
 
     if (Number(account.amount) !== 0) {
       throw ApiException.badRequest(
@@ -131,6 +133,7 @@ export class SavingAccountService {
     const today = new Date();
     const todayStr = today.toISOString().slice(0, 10);
 
+    //Для n-го дня зарплаты
     if (period.startDay) {
       const year = today.getFullYear();
       const month = today.getMonth();
@@ -145,7 +148,7 @@ export class SavingAccountService {
     }
 
     if (period.startDate) {
-      return { from: period.startDate, to: todayStr };
+      return { from: period.startDate, to: period.endDate ?? todayStr };
     }
 
     return null;
@@ -207,6 +210,8 @@ export class SavingAccountService {
       ? `AND t.date BETWEEN :periodFrom AND :periodTo`
       : '';
 
+    console.log({ range });
+
     const qb = this.savingRepository
       .createQueryBuilder('sa')
       .addSelect(
@@ -231,6 +236,8 @@ export class SavingAccountService {
       qb.andWhere('sa.name ILIKE :search', { search: `%${search}%` });
     }
 
+    qb.orderBy('index', 'ASC');
+
     const result = await qb.getRawAndEntities<SavingAccountRaw>();
 
     return result.entities.map((entity, i) => {
@@ -249,5 +256,18 @@ export class SavingAccountService {
         transactionCount: Number(result.raw[i].transactionCount),
       };
     });
+  }
+
+  async updateBatch(data: { id: string; index: number }[]) {
+    await this.datasource.transaction(async (manager) => {
+      for (const item of data) {
+        console.log({ item });
+        await manager
+          .getRepository(SavingAccountEntity)
+          .update(item.id, { index: item.index });
+      }
+      return;
+    });
+    return;
   }
 }

@@ -23,6 +23,15 @@ export class SavingAccountEntity extends BaseEntity {
   @Column({ name: 'is_safe', type: 'boolean', default: false })
   isSafe!: boolean;
 
+  @Column({ name: 'index', type: 'smallint', default: 0 })
+  index!: number;
+
+  @Column({ name: 'icon', type: 'varchar', nullable: true })
+  icon?: string;
+
+  @Column({ name: 'color', type: 'varchar', nullable: true })
+  color!: string;
+
   @Column({ name: 'workspace_id', type: 'uuid', nullable: false })
   workspaceId!: string;
 

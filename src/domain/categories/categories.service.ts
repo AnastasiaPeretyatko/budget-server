@@ -47,7 +47,8 @@ export class CategoriesService {
     workspaceId: string,
   ) {
     const category = await this.findByOne({ name, workspaceId });
-    if (category) throw ApiException.badRequest('Error');
+    if (category)
+      throw ApiException.badRequest('Категория с таким именем существует');
 
     const saved = await this.datasource.getRepository(CategoriesEntity).save({
       name,
@@ -79,7 +80,7 @@ export class CategoriesService {
     workspaceId: string,
   ) {
     const category = await this.findByOne({ id, workspaceId });
-    if (!category) throw ApiException.badRequest('Error');
+    if (!category) throw ApiException.badRequest('Категория не найдена');
 
     if (name) {
       const existName = await this.findByOne({ name, workspaceId });
@@ -111,7 +112,7 @@ export class CategoriesService {
 
   async delete(id: string, workspaceId: string) {
     const category = await this.findByOne({ id, workspaceId });
-    if (!category) throw ApiException.badRequest('Error');
+    if (!category) throw ApiException.badRequest('Категория не найдена');
 
     await this.datasource.getRepository(CategoriesEntity).softDelete(id);
     return {
@@ -121,7 +122,7 @@ export class CategoriesService {
 
   async getOne(id: string, workspaceId: string) {
     const category = await this.findByOne({ id, workspaceId });
-    if (!category) throw ApiException.badRequest('Error');
+    if (!category) throw ApiException.badRequest('Категория не найдена');
 
     const [result] = await this.withCycle([category], workspaceId);
     return result;

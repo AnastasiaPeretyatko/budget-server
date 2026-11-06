@@ -3,6 +3,9 @@ export interface CreateSavingAccountDto {
   description?: string;
   amount: string;
   isSafe?: boolean;
+  icon?: string;
+  color?: string;
+  index: number;
 }
 
 export interface UpdateSavingAccountDto {

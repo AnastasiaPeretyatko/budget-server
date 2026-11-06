@@ -29,6 +29,13 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_HOST_AUTH_METHOD: trust
 
+# своя подсеть: Docker по умолчанию брал 172.18.x, а её кусок 172.18.0.0/30 занимает VPN-интерфейс singbox_tun
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
 volumes:
   node_modules:
   pg-data:

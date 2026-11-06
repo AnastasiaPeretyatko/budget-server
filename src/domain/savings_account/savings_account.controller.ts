@@ -34,6 +34,11 @@ export class SavingAccountController {
     );
   }
 
+  @Patch('batch')
+  async patchBatch(@Body() dto: { id: string; index: number }[]) {
+    return await this.savingAccountService.updateBatch(dto);
+  }
+
   @Patch(':id')
   async update(
     @WorkspaceId() workspaceId: string,
